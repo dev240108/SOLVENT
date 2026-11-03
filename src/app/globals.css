@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #09090B;
+  --foreground: #FAFAFA;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #09090B;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3F3F46;
+}
+
+/* Glass Surface Utility */
+.glass-panel {
+  background: rgba(18, 18, 21, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-subtle {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 30px -5px rgba(16, 185, 129, 0.25);
+}
+
+.glow-rose {
+  box-shadow: 0 0 30px -5px rgba(244, 63, 94, 0.25);
+}
+
+/* Print Stylesheet for Reports */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #111827 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .glass-panel, .glass-panel-subtle {
+    background: #FFFFFF !important;
+    border: 1px solid #E5E7EB !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    color: #111827 !important;
+  }
+
+  .text-text-primary, .text-text-muted, .text-text-dim {
+    color: #111827 !important;
+  }
+}
