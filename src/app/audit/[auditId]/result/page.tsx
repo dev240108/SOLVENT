@@ -5,14 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { SolvencyGauge } from "@/components/SolvencyGauge";
-import { PayloadInspectorModal } from "@/components/PayloadInspectorModal";
 import { TeaserResponse, AggregatedStatementPayload } from "@/types";
 import {
   AlertTriangle,
   ArrowRight,
   Activity,
   ShieldCheck,
-  Eye,
   Flame,
   FileText,
   Building2,
@@ -28,12 +26,10 @@ export default function TeaserResultPage() {
   const [teaser, setTeaser] = useState<TeaserResponse | null>(null);
   const [payload, setPayload] = useState<AggregatedStatementPayload | null>(null);
   const [tone, setTone] = useState<"NEUTRAL" | "PLAYFUL">("NEUTRAL");
-  const [inspectorOpen, setInspectorOpen] = useState(false);
 
   useEffect(() => {
     if (!auditId) return;
 
-    // Load session data
     const savedTeaser = sessionStorage.getItem(`solvent_teaser_${auditId}`);
     const savedPayload = sessionStorage.getItem(`solvent_payload_${auditId}`);
 
@@ -66,7 +62,7 @@ export default function TeaserResultPage() {
       <Navbar showSampleCta={false} />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-        {/* Banner: Local-First Status & Inspector */}
+        {/* Banner: Status */}
         <div className="p-3.5 rounded-2xl bg-surface border border-surface-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="w-4 h-4 text-liquidity shrink-0" />
@@ -74,22 +70,13 @@ export default function TeaserResultPage() {
               Audit ID: <span className="font-mono text-text-primary">{auditId.slice(0, 8)}...</span> • 100% Free & Unlocked
             </span>
           </div>
-          <div className="flex items-center gap-2.5 self-start sm:self-auto">
-            <button
-              onClick={() => setInspectorOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-text-primary border border-surface-border transition-colors text-[11px] font-mono"
-            >
-              <Eye className="w-3.5 h-3.5 text-liquidity" />
-              <span>Inspect Payload</span>
-            </button>
-            <button
-              onClick={() => router.push(`/report/${auditId}`)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-lg bg-liquidity text-canvas font-semibold text-[11px] hover:bg-liquidity-hover transition-colors shadow-emerald-glow"
-            >
-              <span>Full Dossier</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <button
+            onClick={() => router.push(`/report/${auditId}`)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-liquidity text-canvas font-semibold text-[11px] hover:bg-liquidity-hover transition-colors shadow-emerald-glow self-start sm:self-auto"
+          >
+            <span>Open Complete Forensic Report</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {/* Top Summary Block */}
@@ -226,7 +213,7 @@ export default function TeaserResultPage() {
         {/* Critical Finding Highlight Card */}
         <div className="p-5 sm:p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 space-y-2">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
             <h3 className="text-sm sm:text-base font-semibold text-rose-200">
               {teaser.critical_finding.title}
             </h3>
@@ -323,12 +310,6 @@ export default function TeaserResultPage() {
           </div>
         </div>
       </main>
-
-      <PayloadInspectorModal
-        payload={payload}
-        isOpen={inspectorOpen}
-        onClose={() => setInspectorOpen(false)}
-      />
 
       <Footer />
     </div>

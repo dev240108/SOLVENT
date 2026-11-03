@@ -1,43 +1,38 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { ShieldCheck, Lock, Eye, FileText, CheckCircle2, Server, Smartphone } from "lucide-react";
+import { ShieldCheck, Lock, Smartphone, HeartHandshake, EyeOff, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
-  title: "Privacy Architecture & Data Governance — Solvent",
-  description: "Learn how Solvent enforces local-first statement parsing with zero raw statement uploads.",
+  title: "Privacy — Simple & Transparent — Solvent",
+  description: "Learn how Solvent keeps your bank statements completely private and processed directly on your device.",
 };
 
 export default function PrivacyPage() {
-  const dataClassTable = [
+  const pillars = [
     {
-      data: "Original PDF / CSV File Bytes",
-      class: "Highly Sensitive",
-      handling: "Processed strictly in browser memory. Never uploaded to servers.",
+      icon: Smartphone,
+      title: "1. Stays On Your Device",
+      desc: "When you select a statement file (PDF or CSV), it is read directly in your phone or computer's web browser. The original file is never uploaded or saved to our servers.",
+      color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
     },
     {
-      data: "Raw Narration & Account Numbers",
-      class: "Highly Sensitive",
-      handling: "Discarded after local normalization. Never logged or sent.",
+      icon: Lock,
+      title: "2. No Bank Logins or Passwords",
+      desc: "Solvent never asks for your netbanking user ID, password, OTP, or debit card PIN. You simply download your own statement and drop it in.",
+      color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
     },
     {
-      data: "Statement Passwords",
-      class: "Secret Credential",
-      handling: "Transient client input only. Cleared immediately from memory after decryption.",
+      icon: EyeOff,
+      title: "3. No Personal Tracking or Ads",
+      desc: "We never sell your spending habits or financial profile to lenders, advertisers, credit agencies, or third parties. We don't run trackers on your financial data.",
+      color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",
     },
     {
-      data: "Normalized Aggregates (Totals, Counts)",
-      class: "Derived Aggregate",
-      handling: "Sent via encrypted HTTPS after user review in preflight inspector.",
-    },
-    {
-      data: "Counterparty Merchant Identifiers",
-      class: "Sensitive Derived",
-      handling: "Normalized to known brand labels locally; unknown entities pseudonymized.",
-    },
-    {
-      data: "Payment & Banking Credentials",
-      class: "Zero Data Stored",
-      handling: "Solvent is 100% free. No cards, payments, bank logins, or Account Aggregator tokens are ever requested.",
+      icon: HeartHandshake,
+      title: "4. 100% Free & Open Access",
+      desc: "There are no hidden subscriptions, paywalls, or fees. You get the complete analysis, rankings, and actionable savings rules completely free.",
+      color: "text-rose-400 bg-rose-500/10 border-rose-500/20",
     },
   ];
 
@@ -46,118 +41,78 @@ export default function PrivacyPage() {
       <Navbar showSampleCta={true} />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12">
-        <div className="space-y-4">
+        {/* Header */}
+        <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono text-liquidity bg-liquidity/10 border border-liquidity/20">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Local-First Data Architecture</span>
+            <span>Privacy First • No Jargon</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-primary">
-            Privacy Policy & Data Governance
+            Our Simple Privacy Promise
           </h1>
-          <p className="text-base text-text-muted leading-relaxed">
-            Solvent is built on an uncompromising local-first design. We believe personal financial analysis should not require handing over bank passwords or uploading unredacted financial histories.
+          <p className="text-sm sm:text-base text-text-muted max-w-xl mx-auto leading-relaxed">
+            Financial clarity shouldn&apos;t come at the cost of your privacy. Here is how Solvent protects you in simple, plain language.
           </p>
         </div>
 
-        {/* Approved Core Promise */}
-        <div className="p-6 rounded-3xl bg-zinc-900/60 border border-liquidity/30 space-y-3">
-          <span className="text-xs font-mono uppercase tracking-wider text-liquidity block">
-            Approved Privacy Promise
-          </span>
-          <p className="text-sm sm:text-base text-text-primary leading-relaxed font-medium">
-            &ldquo;Your original statement is processed in your browser and is not uploaded by Solvent. To generate your report, Solvent sends a minimized, pseudonymized summary of spending categories and totals to its servers and AI provider. You can inspect the outgoing payload before submission.&rdquo;
-          </p>
-        </div>
-
-        {/* Local vs Server Architecture Comparison */}
+        {/* 4 Friendly Pillars */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 rounded-2xl bg-surface border border-surface-border space-y-4">
-            <div className="flex items-center gap-2.5 text-liquidity">
-              <Smartphone className="w-5 h-5" />
-              <h3 className="text-sm font-semibold text-text-primary">Stays Inside Your Browser</h3>
-            </div>
-            <ul className="space-y-2 text-xs text-text-muted">
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-liquidity shrink-0 mt-0.5" />
-                Raw PDF and CSV bytes
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-liquidity shrink-0 mt-0.5" />
-                Bank account number and customer names
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-liquidity shrink-0 mt-0.5" />
-                Personal UPI VPAs and phone-linked transfers
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-liquidity shrink-0 mt-0.5" />
-                PDF decryption passwords (wiped immediately)
-              </li>
-            </ul>
-          </div>
+          {pillars.map((pillar, idx) => {
+            const Icon = pillar.icon;
+            return (
+              <div
+                key={idx}
+                className="glass-panel rounded-2xl p-6 sm:p-7 border border-surface-border space-y-3.5 hover:border-zinc-700 transition-colors"
+              >
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${pillar.color}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-semibold text-text-primary">
+                  {pillar.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
+                  {pillar.desc}
+                </p>
+              </div>
+            );
+          })}
+        </div>
 
-          <div className="p-6 rounded-2xl bg-surface border border-surface-border space-y-4">
-            <div className="flex items-center gap-2.5 text-indigo-400">
-              <Server className="w-5 h-5" />
-              <h3 className="text-sm font-semibold text-text-primary">Sent to Server (Sanitized Aggregates)</h3>
+        {/* Plain English Summary Card */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-zinc-900/60 border border-surface-border space-y-4">
+          <h2 className="text-base sm:text-lg font-semibold text-text-primary">
+            What Happens When You Upload a Statement?
+          </h2>
+          <div className="space-y-3 text-xs sm:text-sm text-text-muted">
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-liquidity shrink-0 mt-0.5" />
+              <span>
+                <strong>Step 1 (Local):</strong> Your statement is read inside your browser. Names, bank account numbers, and personal UPI IDs are scrubbed out immediately.
+              </span>
             </div>
-            <ul className="space-y-2 text-xs text-text-muted">
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
-                Total debits, credits, and net cash flow numbers
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
-                Micro-drain count and total (&lt; ₹100 spends)
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
-                Top 35 normalized merchant keys (e.g. &ldquo;SWIGGY&rdquo;, &ldquo;M_#A1F9&rdquo;)
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
-                Statement date window (period start and end)
-              </li>
-            </ul>
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-liquidity shrink-0 mt-0.5" />
+              <span>
+                <strong>Step 2 (Local):</strong> Numbers and merchant categories (like Swiggy, Zomato, Blinkit) are grouped to calculate your Spending Pattern Index.
+              </span>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-liquidity shrink-0 mt-0.5" />
+              <span>
+                <strong>Step 3 (Instant):</strong> You receive your interactive forensic report with full merchant rankings and 30-day savings scenarios.
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Data Classification Table */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-text-primary">Data Classification & Handling Matrix</h2>
-          <div className="overflow-x-auto rounded-2xl border border-surface-border">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-surface border-b border-surface-border text-text-dim uppercase font-mono tracking-wider text-[10px]">
-                <tr>
-                  <th className="p-4">Data Type</th>
-                  <th className="p-4">Classification</th>
-                  <th className="p-4">Handling & Safeguards</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-border bg-zinc-950/40">
-                {dataClassTable.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-surface/50">
-                    <td className="p-4 font-semibold text-text-primary font-mono">{row.data}</td>
-                    <td className="p-4 text-text-muted">{row.class}</td>
-                    <td className="p-4 text-text-dim leading-relaxed">{row.handling}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Retention & Deletion Policy */}
-        <div className="p-6 rounded-2xl bg-surface border border-surface-border space-y-3">
-          <h3 className="text-sm font-semibold text-text-primary">Data Retention & Deletion Schedule</h3>
-          <p className="text-xs text-text-muted leading-relaxed">
-            - Free teaser audit summaries automatically expire after <strong>7 days</strong>.<br />
-            - Unlocked paid forensic dossiers are retained for <strong>30 days</strong> so you can re-access and export them using your secret capability link.<br />
-            - You can request immediate permanent deletion of an audit and revoke all export links at any time by contacting{" "}
-            <a href="mailto:privacy@solvent.money" className="text-liquidity underline">
-              privacy@solvent.money
-            </a>.
-          </p>
+        {/* Action Callout */}
+        <div className="text-center pt-2">
+          <Link
+            href="/audit/new"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-semibold bg-liquidity text-canvas hover:bg-liquidity-hover transition-colors shadow-emerald-glow"
+          >
+            <span>Try It With Your Statement — 100% Free</span>
+          </Link>
         </div>
       </main>
 

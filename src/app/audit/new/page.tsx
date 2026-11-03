@@ -5,19 +5,15 @@ import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { StatementDropzone } from "@/components/StatementDropzone";
-import { PayloadInspectorModal } from "@/components/PayloadInspectorModal";
 import { PasswordPromptModal } from "@/components/PasswordPromptModal";
 import { getSyntheticTransactions } from "@/lib/parser/sampleData";
 import { buildAggregatedPayload } from "@/lib/aggregation";
 import { parseStatementLocally } from "@/lib/parser";
-import { AggregatedStatementPayload } from "@/types";
-import { ShieldCheck, Info, FileSpreadsheet, Lock } from "lucide-react";
+import { Lock, ShieldCheck, Sparkles } from "lucide-react";
 
 export default function NewAuditPage() {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [preflightPayload, setPreflightPayload] = useState<AggregatedStatementPayload | null>(null);
-  const [showInspector, setShowInspector] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
@@ -72,43 +68,24 @@ export default function NewAuditPage() {
         return;
       }
 
-      sessionStorage.setItem("solvent_temp_txns", JSON.stringify(result.transactions));
-      setPreflightPayload(result.payload);
-      setShowInspector(true);
-    } catch (err: any) {
-      alert("Parsing error: " + err.message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleConfirmSendPayload = async () => {
-    if (!preflightPayload) return;
-    try {
-      setIsProcessing(true);
-      setShowInspector(false);
-
+      // Submit aggregates directly and forward to report
       const res = await fetch("/api/audit/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(preflightPayload),
+        body: JSON.stringify(result.payload),
       });
 
       if (!res.ok) throw new Error("Server analysis failed.");
 
       const data = await res.json();
-      const tempTxns = sessionStorage.getItem("solvent_temp_txns");
-
       sessionStorage.setItem(`solvent_token_${data.auditId}`, data.accessToken);
       sessionStorage.setItem(`solvent_teaser_${data.auditId}`, JSON.stringify(data.teaser));
-      sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(preflightPayload));
-      if (tempTxns) {
-        sessionStorage.setItem(`solvent_txns_${data.auditId}`, tempTxns);
-      }
+      sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(result.payload));
+      sessionStorage.setItem(`solvent_txns_${data.auditId}`, JSON.stringify(result.transactions));
 
       router.push(`/report/${data.auditId}`);
     } catch (err: any) {
-      alert("Submission error: " + err.message);
+      alert("Parsing error: " + err.message);
     } finally {
       setIsProcessing(false);
     }
@@ -122,13 +99,13 @@ export default function NewAuditPage() {
         <div className="text-center space-y-3 mb-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono text-liquidity bg-liquidity/10 border border-liquidity/20">
             <Lock className="w-3.5 h-3.5" />
-            <span>Local Browser Sandbox</span>
+            <span>Local & Private</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-primary">
             Upload Your Bank or UPI Statement
           </h1>
           <p className="text-sm text-text-muted max-w-lg mx-auto leading-relaxed">
-            Your file stays within your device process. Solvent normalizes debits and detects leakage without transmitting your raw bank statements.
+            Your file stays entirely within your device. Solvent organizes your spending habits into clear patterns instantly and 100% free.
           </p>
         </div>
 
@@ -143,27 +120,19 @@ export default function NewAuditPage() {
           <div className="pt-4 border-t border-surface-border grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-text-dim">
             <div className="flex items-start gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-liquidity shrink-0 mt-1.5" />
-              <span>Supported formats: CSV exports and digital PDFs up to 15 MB.</span>
+              <span>Supports CSV exports and digital PDFs up to 15 MB.</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-liquidity shrink-0 mt-1.5" />
-              <span>Password protected PDFs decrypted locally inside browser memory.</span>
+              <span>Password-protected PDFs decrypted locally on your machine.</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-liquidity shrink-0 mt-1.5" />
-              <span>You can inspect the exact serialized JSON payload before sending.</span>
+              <span>Zero account numbers, customer names, or passwords ever leave.</span>
             </div>
           </div>
         </div>
       </main>
-
-      <PayloadInspectorModal
-        payload={preflightPayload}
-        isOpen={showInspector}
-        isConfirmStep={true}
-        onClose={() => setShowInspector(false)}
-        onConfirmSend={handleConfirmSendPayload}
-      />
 
       <PasswordPromptModal
         isOpen={passwordModalOpen}

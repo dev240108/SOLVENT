@@ -24,7 +24,7 @@ export function Navbar({ onTrySample, showSampleCta = true }: NavbarProps) {
           </div>
         </Link>
 
-        {/* Anchor Links */}
+        {/* User-Friendly Links */}
         <nav className="hidden md:flex items-center gap-8 text-sm text-text-muted">
           <Link href="/#features" className="hover:text-text-primary transition-colors">
             Features
@@ -34,10 +34,7 @@ export function Navbar({ onTrySample, showSampleCta = true }: NavbarProps) {
           </Link>
           <Link href="/privacy" className="hover:text-text-primary transition-colors flex items-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-liquidity/80" />
-            Privacy Architecture
-          </Link>
-          <Link href="/security" className="hover:text-text-primary transition-colors">
-            Security & Inspector
+            Privacy
           </Link>
           <Link href="/faq" className="hover:text-text-primary transition-colors">
             FAQ

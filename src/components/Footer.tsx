@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, Lock, Cpu, Sparkles } from "lucide-react";
+import { ShieldCheck, Lock, Smartphone } from "lucide-react";
 
 export function Footer() {
   return (
@@ -12,49 +12,48 @@ export function Footer() {
               <span className="font-mono text-xl font-bold tracking-tight text-text-primary">
                 SOLVENT<span className="text-liquidity">.</span>
               </span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-liquidity/10 text-liquidity border border-liquidity/20">
-                Local-First Ingestion
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-liquidity/10 text-liquidity border border-liquidity/20">
+                100% On-Device Processing
               </span>
             </div>
             <p className="text-sm text-text-dim max-w-md leading-relaxed">
-              Your original statement file is parsed locally in your browser and is never stored on our servers.
-              Solvent sends only a minimized, pseudonymized summary of spending categories and totals to generate your forensic diagnosis.
+              Understand where your money goes without sharing your bank login. Your statement stays on your phone or computer, giving you immediate clarity on your spending habits.
             </p>
-            <div className="flex items-center gap-4 text-xs text-text-dim">
-              <span className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-text-dim">
+              <span className="flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-liquidity" /> No Bank Login
               </span>
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-liquidity" /> Zero Raw PII Transmitted
+              <span className="flex items-center gap-1.5">
+                <Smartphone className="w-3.5 h-3.5 text-liquidity" /> Stays On Your Device
               </span>
-              <span className="flex items-center gap-1">
-                <Cpu className="w-3.5 h-3.5 text-liquidity" /> Client-Side Parsing
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-liquidity" /> 100% Free
               </span>
             </div>
           </div>
 
           {/* Links 1 */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-text-primary">Platform</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-text-primary">Product</h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/audit/new" className="hover:text-text-primary transition-colors">
-                  Upload Statement
-                </Link>
-              </li>
-              <li>
-                <Link href="/security" className="hover:text-text-primary transition-colors">
-                  Payload Inspector
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="hover:text-text-primary transition-colors">
-                  Supported Bank Formats
+                  Analyze Statement
                 </Link>
               </li>
               <li>
                 <Link href="/#features" className="hover:text-text-primary transition-colors">
-                  Liquidity Directives
+                  Key Features
+                </Link>
+              </li>
+              <li>
+                <Link href="/#how-it-works" className="hover:text-text-primary transition-colors">
+                  How It Works
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="hover:text-text-primary transition-colors">
+                  Supported Banks
                 </Link>
               </li>
             </ul>
@@ -62,21 +61,21 @@ export function Footer() {
 
           {/* Links 2 */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-text-primary">Governance & Legal</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-text-primary">Trust & Support</h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/privacy" className="hover:text-text-primary transition-colors">
-                  Privacy Policy & Data Boundary
+                  Privacy Policy
                 </Link>
               </li>
               <li>
                 <Link href="/terms" className="hover:text-text-primary transition-colors">
-                  Terms & Disclaimers
+                  Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="/security" className="hover:text-text-primary transition-colors">
-                  Threat Model & Audit Safety
+                <Link href="/faq" className="hover:text-text-primary transition-colors">
+                  Frequently Asked Questions
                 </Link>
               </li>
               <li>
@@ -90,9 +89,9 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-text-dim gap-4">
-          <p>© {new Date().getFullYear()} Solvent (solvent.money). Built for privacy-first Indian UPI & bank forensics.</p>
+          <p>© {new Date().getFullYear()} Solvent. Built for fast, private Indian UPI & banking insights.</p>
           <p className="max-w-md sm:text-right">
-            Spending Pattern Index is an educational heuristic, not a credit score or financial advice.
+            Spending Pattern Index is an educational spending habit indicator.
           </p>
         </div>
       </div>

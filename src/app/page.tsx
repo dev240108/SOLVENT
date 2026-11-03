@@ -9,19 +9,15 @@ import { SolvencyGauge } from "@/components/SolvencyGauge";
 import { HowItWorksSection } from "@/components/HowItWorksSection";
 import { FeaturesPreview } from "@/components/FeaturesPreview";
 import { FaqSection } from "@/components/FaqSection";
-import { PayloadInspectorModal } from "@/components/PayloadInspectorModal";
 import { PasswordPromptModal } from "@/components/PasswordPromptModal";
 import { getSyntheticTransactions } from "@/lib/parser/sampleData";
 import { buildAggregatedPayload } from "@/lib/aggregation";
 import { parseStatementLocally } from "@/lib/parser";
-import { AggregatedStatementPayload } from "@/types";
 import { ShieldCheck, Zap, Lock, AlertTriangle, Sparkles } from "lucide-react";
 
 export default function LandingPage() {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [preflightPayload, setPreflightPayload] = useState<AggregatedStatementPayload | null>(null);
-  const [showInspector, setShowInspector] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
@@ -61,13 +57,13 @@ export default function LandingPage() {
     }
   };
 
-  // Handle uploaded file
+  // Handle uploaded file - direct, fast, user-ready
   const handleFileSelect = async (file: File) => {
     try {
       setIsProcessing(true);
       setPendingFile(file);
 
-      // Read file content
+      // Read file content locally
       const text = await file.text();
       const auditSalt = Math.random().toString(36).substring(7);
 
@@ -83,28 +79,11 @@ export default function LandingPage() {
         return;
       }
 
-      // Store transactions in session
-      sessionStorage.setItem("solvent_temp_txns", JSON.stringify(result.transactions));
-      setPreflightPayload(result.payload);
-      setShowInspector(true); // Preflight verification step
-    } catch (err: any) {
-      alert("File parsing error: " + err.message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // User confirmed payload in preflight inspector
-  const handleConfirmSendPayload = async () => {
-    if (!preflightPayload) return;
-    try {
-      setIsProcessing(true);
-      setShowInspector(false);
-
+      // Immediately process payload without developer JSON hurdles
       const res = await fetch("/api/audit/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(preflightPayload),
+        body: JSON.stringify(result.payload),
       });
 
       if (!res.ok) {
@@ -112,18 +91,14 @@ export default function LandingPage() {
       }
 
       const data = await res.json();
-      const tempTxns = sessionStorage.getItem("solvent_temp_txns");
-
       sessionStorage.setItem(`solvent_token_${data.auditId}`, data.accessToken);
       sessionStorage.setItem(`solvent_teaser_${data.auditId}`, JSON.stringify(data.teaser));
-      sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(preflightPayload));
-      if (tempTxns) {
-        sessionStorage.setItem(`solvent_txns_${data.auditId}`, tempTxns);
-      }
+      sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(result.payload));
+      sessionStorage.setItem(`solvent_txns_${data.auditId}`, JSON.stringify(result.transactions));
 
       router.push(`/report/${data.auditId}`);
     } catch (err: any) {
-      alert("Submission error: " + err.message);
+      alert("File parsing error: " + err.message);
     } finally {
       setIsProcessing(false);
     }
@@ -145,7 +120,7 @@ export default function LandingPage() {
               {/* Privacy Badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono bg-zinc-900 border border-surface-border text-zinc-300">
                 <ShieldCheck className="w-4 h-4 text-liquidity" />
-                <span>LOCAL-FIRST ANALYSIS • Original file stays in your browser</span>
+                <span>100% PRIVATE • Statement stays on your device</span>
               </div>
 
               {/* Main Headline */}
@@ -158,7 +133,7 @@ export default function LandingPage() {
 
               {/* Subcopy */}
               <p className="text-base sm:text-lg text-text-muted max-w-xl leading-relaxed">
-                Drop a bank or UPI statement. Solvent organizes confusing transactions into clear spending patterns — with local-first processing, zero bank login, and 100% free analysis.
+                Drop your bank or UPI statement. Solvent organizes confusing transactions into clear spending patterns — with local-first processing, zero bank login, and 100% free analysis.
               </p>
 
               {/* Three Benefit Chips */}
@@ -167,7 +142,7 @@ export default function LandingPage() {
                   <Zap className="w-3.5 h-3.5 text-liquidity" /> Instant Analysis
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-surface border border-surface-border text-zinc-300">
-                  <Lock className="w-3.5 h-3.5 text-emerald-400" /> Zero Raw PII Transmitted
+                  <Lock className="w-3.5 h-3.5 text-emerald-400" /> Zero Bank Login
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-surface border border-surface-border text-zinc-300">
                   <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> 100% Free Forever
@@ -243,7 +218,7 @@ export default function LandingPage() {
       <section className="py-8 border-y border-surface-border bg-surface/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
           <p className="text-xs font-mono uppercase tracking-wider text-text-dim">
-            Example Statement Sources Compatible with Solvent
+            Compatible with All Major Indian Bank & UPI Exports
           </p>
           <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs sm:text-sm font-semibold text-zinc-400 font-mono">
             <span>SBI</span>
@@ -271,15 +246,6 @@ export default function LandingPage() {
 
       {/* FAQ */}
       <FaqSection />
-
-      {/* Preflight Payload Inspector Modal */}
-      <PayloadInspectorModal
-        payload={preflightPayload}
-        isOpen={showInspector}
-        isConfirmStep={true}
-        onClose={() => setShowInspector(false)}
-        onConfirmSend={handleConfirmSendPayload}
-      />
 
       {/* Password Prompt Modal */}
       <PasswordPromptModal
