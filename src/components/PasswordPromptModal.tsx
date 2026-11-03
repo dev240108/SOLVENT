@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lock, Eye, EyeOff, ShieldCheck, X } from "lucide-react";
 
 interface PasswordPromptModalProps {
   isOpen: boolean;
   fileName: string;
+  errorMessage?: string | null;
   onClose: () => void;
   onSubmit: (password: string) => void;
 }
@@ -13,12 +14,19 @@ interface PasswordPromptModalProps {
 export function PasswordPromptModal({
   isOpen,
   fileName,
+  errorMessage,
   onClose,
   onSubmit,
 }: PasswordPromptModalProps) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (errorMessage) {
+      setError(errorMessage);
+    }
+  }, [errorMessage]);
 
   if (!isOpen) return null;
 
@@ -29,7 +37,7 @@ export function PasswordPromptModal({
       return;
     }
     setError(null);
-    onSubmit(password);
+    onSubmit(password.trim());
     setPassword("");
   };
 
@@ -65,7 +73,7 @@ export function PasswordPromptModal({
         <div className="mb-4 p-3 rounded-lg bg-zinc-900/60 border border-surface-border text-xs text-text-muted flex items-start gap-2.5">
           <ShieldCheck className="w-4 h-4 text-liquidity shrink-0 mt-0.5" />
           <p>
-            Enter your document password to decrypt locally in your browser. Solvent never sends or logs passwords.
+            Enter your statement password to decrypt it. Solvent never stores, shares, or logs document passwords.
           </p>
         </div>
 
@@ -95,15 +103,16 @@ export function PasswordPromptModal({
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            {error && <p className="text-xs text-rose-400 mt-1.5">{error}</p>}
+            {error && <p className="text-xs text-rose-400 mt-1.5 font-medium">{error}</p>}
           </div>
 
           <div className="pt-2 text-[11px] text-text-dim border-t border-surface-border">
-            <span className="font-semibold text-text-muted">Common Bank Formats:</span>
+            <span className="font-semibold text-text-muted">Common Bank Passwords:</span>
             <ul className="list-disc list-inside mt-1 space-y-0.5">
-              <li>HDFC: Customer ID or First 4 letters of name + DOB (DDMM)</li>
-              <li>SBI: Last 5 digits of mobile + DOB (DDMM)</li>
-              <li>ICICI: First 4 letters of name (lowercase) + DOB (DDMM)</li>
+              <li><strong>HDFC</strong>: Customer ID OR First 4 letters of name + DOB (DDMM)</li>
+              <li><strong>SBI</strong>: Last 5 digits of registered mobile + DOB (DDMM)</li>
+              <li><strong>ICICI</strong>: First 4 letters of name (lowercase) + DOB (DDMM)</li>
+              <li><strong>Axis</strong>: First 4 letters of name (UPPERCASE) + Last 4 digits of account</li>
             </ul>
           </div>
 
@@ -119,7 +128,7 @@ export function PasswordPromptModal({
               type="submit"
               className="px-5 py-2 rounded-lg text-xs font-semibold bg-liquidity text-canvas hover:bg-liquidity-hover transition-colors shadow-emerald-glow"
             >
-              Unlock Locally
+              Unlock & Analyze
             </button>
           </div>
         </form>

@@ -19,6 +19,7 @@ export default function LandingPage() {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   // Trigger Synthetic Sample Statement
@@ -61,6 +62,7 @@ export default function LandingPage() {
   const handleFileSelect = async (file: File) => {
     try {
       setIsProcessing(true);
+      setPasswordError(null);
       setPendingFile(file);
 
       let result: any;
@@ -77,6 +79,7 @@ export default function LandingPage() {
       }
 
       if (result.isEncrypted) {
+        setPasswordError(null);
         setPasswordModalOpen(true);
         return;
       }
@@ -106,6 +109,56 @@ export default function LandingPage() {
       router.push(`/report/${data.auditId}`);
     } catch (err: any) {
       alert("File parsing error: " + err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (password: string) => {
+    if (!pendingFile) return;
+    try {
+      setIsProcessing(true);
+      setPasswordError(null);
+
+      const fd = new FormData();
+      fd.append("file", pendingFile);
+      fd.append("password", password);
+
+      const pdfRes = await fetch("/api/parse/pdf", { method: "POST", body: fd });
+      const result = await pdfRes.json();
+
+      if (result.isEncrypted) {
+        setPasswordError(result.error || "Incorrect statement password. Please try again.");
+        return;
+      }
+
+      if (!result.success || !result.payload || !result.transactions) {
+        setPasswordError(result.error || "Unable to extract transactions from this statement.");
+        return;
+      }
+
+      setPasswordModalOpen(false);
+
+      // Immediately process payload
+      const res = await fetch("/api/audit/teaser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(result.payload),
+      });
+
+      if (!res.ok) {
+        throw new Error("Could not process aggregates on server.");
+      }
+
+      const data = await res.json();
+      sessionStorage.setItem(`solvent_token_${data.auditId}`, data.accessToken);
+      sessionStorage.setItem(`solvent_teaser_${data.auditId}`, JSON.stringify(data.teaser));
+      sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(result.payload));
+      sessionStorage.setItem(`solvent_txns_${data.auditId}`, JSON.stringify(result.transactions));
+
+      router.push(`/report/${data.auditId}`);
+    } catch (err: any) {
+      setPasswordError(err.message || "An unexpected error occurred during decryption.");
     } finally {
       setIsProcessing(false);
     }
@@ -258,11 +311,12 @@ export default function LandingPage() {
       <PasswordPromptModal
         isOpen={passwordModalOpen}
         fileName={pendingFile?.name || "statement.pdf"}
-        onClose={() => setPasswordModalOpen(false)}
-        onSubmit={() => {
+        errorMessage={passwordError}
+        onClose={() => {
           setPasswordModalOpen(false);
-          alert("Password accepted locally. Decrypting in browser worker...");
+          setPasswordError(null);
         }}
+        onSubmit={handlePasswordSubmit}
       />
 
       <Footer />
