@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import path from "path";
+import fs from "fs";
+import { pathToFileURL } from "url";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PDFParse } = require("pdf-parse");
 import { NormalizedTransaction, TransactionType } from "@/types";
@@ -6,9 +9,30 @@ import { matchBrand } from "@/lib/parser/brandDictionary";
 import { getTimeBucket, normalizeDate, parseAmount, clientPseudonymize } from "@/lib/parser/adapters";
 import { buildAggregatedPayload } from "@/lib/aggregation";
 
+// Ensure pdfjs fake worker can resolve on Node / Next.js
+function configurePdfWorker() {
+  try {
+    const possiblePaths = [
+      path.join(process.cwd(), "node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs"),
+      path.join(process.cwd(), "node_modules/pdf-parse/dist/worker/pdf.worker.mjs"),
+    ];
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        const fileUrl = pathToFileURL(p).href;
+        PDFParse.setWorker(fileUrl);
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not set custom worker path:", err);
+  }
+}
+
 export async function POST(req: NextRequest) {
   let parser: any = null;
   try {
+    configurePdfWorker();
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const password = (formData.get("password") as string | null)?.trim();
