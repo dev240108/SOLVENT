@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       isSynthetic: false,
     };
 
-    AuditStore.save(auditRecord);
+    await AuditStore.save(auditRecord);
 
     return NextResponse.json({
       auditId,

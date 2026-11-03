@@ -54,9 +54,18 @@ export default function NewAuditPage() {
       setIsProcessing(true);
       setPendingFile(file);
 
-      const text = await file.text();
-      const auditSalt = Math.random().toString(36).substring(7);
-      const result = await parseStatementLocally(text, file.name, auditSalt);
+      let result: any;
+
+      if (file.name.toLowerCase().endsWith(".pdf")) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const pdfRes = await fetch("/api/parse/pdf", { method: "POST", body: fd });
+        result = await pdfRes.json();
+      } else {
+        const text = await file.text();
+        const auditSalt = Math.random().toString(36).substring(7);
+        result = await parseStatementLocally(text, file.name, auditSalt);
+      }
 
       if (result.isEncrypted) {
         setPasswordModalOpen(true);

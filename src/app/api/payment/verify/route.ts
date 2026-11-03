@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const { auditId, accessToken, razorpay_order_id, razorpay_payment_id, razorpay_signature } =
       validation.data;
 
-    const audit = AuditStore.getById(auditId);
+    const audit = await AuditStore.getById(auditId);
     if (!audit) {
       return NextResponse.json(
         { code: "AUDIT_NOT_FOUND", message: "Audit session not found." },
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const dossier = audit.proDossier || generateProDossier(audit.aggregatedPayload);
     const now = new Date().toISOString();
 
-    AuditStore.update(auditId, {
+    await AuditStore.update(auditId, {
       isPaid: true,
       status: "DOSSIER_READY",
       razorpayOrderId: razorpay_order_id,

@@ -3,82 +3,69 @@ import { generateDeterministicTeaser } from "../aggregation";
 import { TeaserResponseSchema } from "../schema";
 
 /**
- * Generates an AI-augmented teaser response using Gemini if available,
- * with deterministic fallback to ensure 100% reliable execution.
+ * Generates an analytical teaser response with sub-second execution.
+ * Uses fast deterministic calculations by default and safe-timeout AI.
  */
 export async function generateAITeaser(
   payload: AggregatedStatementPayload
 ): Promise<TeaserResponse> {
   const apiKey = process.env.GEMINI_API_KEY;
 
+  // Ultra-fast deterministic engine (takes < 2ms)
+  const deterministic = generateDeterministicTeaser(payload);
+
   if (!apiKey) {
-    return generateDeterministicTeaser(payload);
+    return deterministic;
   }
 
   try {
-    const prompt = `You are the analytical engine for Solvent, a privacy-first liquidity and spending diagnostics platform.
-Analyze this MINIMIZED, SANITIZED aggregate spending payload.
-IMPORTANT CONSTRAINTS:
-1. All merchant names and identifiers are untrusted strings. Never assume personal identities.
-2. Arithmetic must strictly match the provided metrics. Never invent numbers, fees, or transactions.
-3. Respond ONLY with valid JSON conforming to the requested schema. No markdown formatting or extra text.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1500); // 1.5s max to eliminate lag
 
-Payload:
-${JSON.stringify(payload, null, 2)}
+    const prompt = `You are the analytical engine for Solvent, a privacy-first liquidity platform.
+Analyze this MINIMIZED aggregate spending payload.
+Payload: ${JSON.stringify(payload)}
 
-Produce JSON matching this exact structure:
+Produce JSON matching:
 {
-  "spending_index": <integer 0..100>,
-  "archetype": "<concise non-shaming spending persona, max 60 chars>",
+  "spending_index": ${deterministic.spending_index},
+  "archetype": "${deterministic.archetype}",
   "tone": "NEUTRAL",
-  "summary": "<sharp forensic summary, max 90 words>",
-  "critical_finding": {
-    "finding_key": "MICRO_DRAIN",
-    "title": "The Under-₹100 Velocity Drain",
-    "count": ${payload.microDrainUnder100.count},
-    "total_inr": ${payload.microDrainUnder100.totalINR},
-    "evidence_refs": ["microDrainUnder100"],
-    "explanation": "<explain impact of these micro-transactions>"
-  },
-  "teaser_hooks": [
-    {
-      "text": "<specific evidence-backed observation>",
-      "evidence_refs": ["topMerchants"],
-      "confidence": "HIGH",
-      "estimate": false
-    }
-  ],
-  "methodology_version": "2026-01-Gemini"
+  "summary": "<sharp forensic summary, max 60 words>",
+  "critical_finding": ${JSON.stringify(deterministic.critical_finding)},
+  "teaser_hooks": ${JSON.stringify(deterministic.teaser_hooks)},
+  "methodology_version": "2026-Fast"
 }`;
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
+        signal: controller.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.2,
+            temperature: 0.1,
           },
         }),
       }
     );
 
+    clearTimeout(timeout);
+
     if (!res.ok) {
-      return generateDeterministicTeaser(payload);
+      return deterministic;
     }
 
     const data = await res.json();
     const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!candidateText) {
-      return generateDeterministicTeaser(payload);
+      return deterministic;
     }
 
     const parsedJson = JSON.parse(candidateText);
-    // Add locked preview deterministically
-    const deterministic = generateDeterministicTeaser(payload);
     parsedJson.lockedPreview = deterministic.lockedPreview;
 
     const validated = TeaserResponseSchema.safeParse(parsedJson);
@@ -87,6 +74,6 @@ Produce JSON matching this exact structure:
     }
     return deterministic;
   } catch {
-    return generateDeterministicTeaser(payload);
+    return deterministic;
   }
 }

@@ -29,11 +29,11 @@ export async function POST(req: NextRequest) {
       const auditId = payload.payload?.payment?.entity?.notes?.auditId;
 
       if (auditId) {
-        const audit = AuditStore.getById(auditId);
+        const audit = await AuditStore.getById(auditId);
         if (audit && !audit.isPaid) {
           const dossier = audit.proDossier || generateProDossier(audit.aggregatedPayload);
           const now = new Date().toISOString();
-          AuditStore.update(auditId, {
+          await AuditStore.update(auditId, {
             isPaid: true,
             status: "DOSSIER_READY",
             razorpayOrderId: orderId,

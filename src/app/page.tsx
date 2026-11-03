@@ -63,11 +63,18 @@ export default function LandingPage() {
       setIsProcessing(true);
       setPendingFile(file);
 
-      // Read file content locally
-      const text = await file.text();
-      const auditSalt = Math.random().toString(36).substring(7);
+      let result: any;
 
-      const result = await parseStatementLocally(text, file.name, auditSalt);
+      if (file.name.toLowerCase().endsWith(".pdf")) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const pdfRes = await fetch("/api/parse/pdf", { method: "POST", body: fd });
+        result = await pdfRes.json();
+      } else {
+        const text = await file.text();
+        const auditSalt = Math.random().toString(36).substring(7);
+        result = await parseStatementLocally(text, file.name, auditSalt);
+      }
 
       if (result.isEncrypted) {
         setPasswordModalOpen(true);
@@ -75,11 +82,11 @@ export default function LandingPage() {
       }
 
       if (!result.success || !result.payload || !result.transactions) {
-        alert(result.error || "Unable to extract transactions from this statement.");
+        alert(result.error || "Unable to extract transactions from this statement. Please check format.");
         return;
       }
 
-      // Immediately process payload without developer JSON hurdles
+      // Immediately process payload
       const res = await fetch("/api/audit/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

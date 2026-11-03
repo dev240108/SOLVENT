@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { auditId, accessToken } = validation.data;
-    const audit = AuditStore.getById(auditId);
+    const audit = await AuditStore.getById(auditId);
 
     if (!audit) {
       return NextResponse.json(
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    AuditStore.update(auditId, {
+    await AuditStore.update(auditId, {
       razorpayOrderId: orderId,
       status: "ORDER_CREATED",
     });

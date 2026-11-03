@@ -12,7 +12,7 @@ export async function GET(
       req.headers.get("x-audit-token") ||
       req.nextUrl.searchParams.get("token");
 
-    const audit = AuditStore.getById(auditId);
+    const audit = await AuditStore.getById(auditId);
     if (!audit) {
       return NextResponse.json(
         { code: "AUDIT_NOT_FOUND", message: "Audit not found." },
