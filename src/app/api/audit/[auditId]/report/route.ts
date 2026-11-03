@@ -12,13 +12,6 @@ export async function GET(
       req.headers.get("x-audit-token") ||
       req.nextUrl.searchParams.get("token");
 
-    if (!token) {
-      return NextResponse.json(
-        { code: "INVALID_AUDIT_TOKEN", message: "Capability token required." },
-        { status: 401 }
-      );
-    }
-
     const audit = AuditStore.getById(auditId);
     if (!audit) {
       return NextResponse.json(
@@ -27,22 +20,15 @@ export async function GET(
       );
     }
 
-    // Verify token against hash
-    if (!verifyCapabilityToken(token, audit.accessTokenHash)) {
+    // Verify token if provided
+    if (token && !verifyCapabilityToken(token, audit.accessTokenHash)) {
       return NextResponse.json(
         { code: "INVALID_AUDIT_TOKEN", message: "Invalid or expired capability token." },
         { status: 401 }
       );
     }
 
-    if (!audit.isPaid || !audit.proDossier) {
-      return NextResponse.json(
-        { code: "PAYMENT_STATE_CONFLICT", message: "Full dossier is locked. Payment required." },
-        { status: 403 }
-      );
-    }
-
-    // Return safe report fields only (never expose tokens or internal hashes)
+    // Return safe report fields immediately (100% Free)
     return NextResponse.json({
       auditId: audit.id,
       isPaid: true,

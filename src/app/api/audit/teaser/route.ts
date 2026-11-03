@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { AggregatedStatementPayloadSchema } from "@/lib/schema";
 import { generateAITeaser } from "@/lib/ai/gemini";
+import { generateProDossier } from "@/lib/aggregation";
 import { AuditStore } from "@/lib/store/auditStore";
 import { generateCapabilityToken, hashCapabilityToken } from "@/lib/crypto";
 import { SolventAuditRecord } from "@/types";
@@ -25,23 +26,26 @@ export async function POST(req: NextRequest) {
 
     const payload = validation.data;
 
-    // 2. Generate cryptographically random capability token & hash
+    // 2. Generate random capability token & hash
     const auditId = crypto.randomUUID();
     const capabilityToken = generateCapabilityToken();
     const tokenHash = hashCapabilityToken(capabilityToken);
 
-    // 3. Generate Teaser Analysis
-    const teaser = await generateAITeaser(payload);
+    // 3. Generate both Teaser and Full Pro Dossier immediately (100% Free)
+    const [teaser, proDossier] = await Promise.all([
+      generateAITeaser(payload),
+      Promise.resolve(generateProDossier(payload)),
+    ]);
 
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const auditRecord: SolventAuditRecord = {
       id: auditId,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
       expiresAt,
-      status: "TEASER_READY",
+      status: "DOSSIER_READY",
       accessTokenHash: tokenHash,
       schemaVersion: "1.0",
       periodStart: payload.periodStart,
@@ -56,9 +60,12 @@ export async function POST(req: NextRequest) {
       microDrainINR: payload.microDrainUnder100.totalINR,
       aggregatedPayload: payload,
       teaserResult: teaser,
-      isPaid: false,
-      tierAmountPaise: 4900,
+      proDossier,
+      isPaid: true, // 100% Free & fully unlocked
+      tierAmountPaise: 0,
       currency: "INR",
+      paidAt: now.toISOString(),
+      dossierGeneratedAt: now.toISOString(),
       isSynthetic: false,
     };
 
@@ -67,12 +74,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       auditId,
       accessToken: capabilityToken,
-      status: "TEASER_READY",
+      status: "DOSSIER_READY",
       teaser,
+      proDossier,
+      reportUrl: `/report/${auditId}`,
       expiresAt,
     });
   } catch (error: any) {
-    console.error("Teaser generation error:", error);
+    console.error("Analysis generation error:", error);
     return NextResponse.json(
       {
         code: "PROCESSING_FAILED",

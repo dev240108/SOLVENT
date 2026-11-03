@@ -15,7 +15,7 @@ import { getSyntheticTransactions } from "@/lib/parser/sampleData";
 import { buildAggregatedPayload } from "@/lib/aggregation";
 import { parseStatementLocally } from "@/lib/parser";
 import { AggregatedStatementPayload } from "@/types";
-import { ShieldCheck, Zap, Lock, ArrowRight, Sparkles, AlertTriangle, Layers } from "lucide-react";
+import { ShieldCheck, Zap, Lock, AlertTriangle, Sparkles } from "lucide-react";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -53,7 +53,7 @@ export default function LandingPage() {
       sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(payload));
       sessionStorage.setItem(`solvent_txns_${data.auditId}`, JSON.stringify(sampleTxns));
 
-      router.push(`/audit/${data.auditId}/result`);
+      router.push(`/report/${data.auditId}`);
     } catch (err: any) {
       alert("Error starting sample analysis: " + err.message);
     } finally {
@@ -121,7 +121,7 @@ export default function LandingPage() {
         sessionStorage.setItem(`solvent_txns_${data.auditId}`, tempTxns);
       }
 
-      router.push(`/audit/${data.auditId}/result`);
+      router.push(`/report/${data.auditId}`);
     } catch (err: any) {
       alert("Submission error: " + err.message);
     } finally {
@@ -158,19 +158,19 @@ export default function LandingPage() {
 
               {/* Subcopy */}
               <p className="text-base sm:text-lg text-text-muted max-w-xl leading-relaxed">
-                Drop a bank or UPI statement. Solvent organizes confusing transactions into clear spending patterns — with local-first processing and no bank login.
+                Drop a bank or UPI statement. Solvent organizes confusing transactions into clear spending patterns — with local-first processing, zero bank login, and 100% free analysis.
               </p>
 
               {/* Three Benefit Chips */}
               <div className="flex flex-wrap items-center gap-2.5 pt-1">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-surface border border-surface-border text-zinc-300">
-                  <Zap className="w-3.5 h-3.5 text-liquidity" /> In-Browser Analysis
+                  <Zap className="w-3.5 h-3.5 text-liquidity" /> Instant Analysis
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-surface border border-surface-border text-zinc-300">
                   <Lock className="w-3.5 h-3.5 text-emerald-400" /> Zero Raw PII Transmitted
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-surface border border-surface-border text-zinc-300">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> ₹49 Dossier Unlock
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> 100% Free Forever
                 </span>
               </div>
 
@@ -286,7 +286,7 @@ export default function LandingPage() {
         isOpen={passwordModalOpen}
         fileName={pendingFile?.name || "statement.pdf"}
         onClose={() => setPasswordModalOpen(false)}
-        onSubmit={(pass) => {
+        onSubmit={() => {
           setPasswordModalOpen(false);
           alert("Password accepted locally. Decrypting in browser worker...");
         }}

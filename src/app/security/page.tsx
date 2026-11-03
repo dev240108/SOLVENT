@@ -30,8 +30,8 @@ export default function SecurityPage() {
       status: "Guarded",
     },
     {
-      threat: "Payment Spoofing & Replay",
-      mitigation: "Server-side HMAC-SHA256 signature verification in constant-time. Idempotent webhook database ledger.",
+      threat: "Financial Credential Leakage",
+      mitigation: "Zero payment details, bank logins, or netbanking credentials are requested or accepted. 100% free.",
       status: "Guarded",
     },
     {
@@ -135,10 +135,10 @@ export default function SecurityPage() {
           <div className="p-6 rounded-2xl bg-surface border border-surface-border space-y-3">
             <div className="flex items-center gap-2 text-indigo-400">
               <ShieldCheck className="w-4 h-4" />
-              <h3 className="text-sm font-semibold text-text-primary">HMAC-SHA256 Payment Verification</h3>
+              <h3 className="text-sm font-semibold text-text-primary">100% Free Open Platform</h3>
             </div>
             <p className="text-xs text-text-muted leading-relaxed">
-              Payment verification never relies on frontend callbacks. Razorpay order IDs and payment IDs are cryptographically hashed on the server using timing-safe comparisons to prevent replay attacks and race conditions.
+              Solvent does not require payment processing, card numbers, or checkout steps. All forensic reporting, temporal analysis, and directives are completely open and instantaneous.
             </p>
           </div>
         </div>
@@ -154,3 +154,4 @@ export default function SecurityPage() {
     </div>
   );
 }
+

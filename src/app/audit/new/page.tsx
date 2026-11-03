@@ -45,7 +45,7 @@ export default function NewAuditPage() {
       sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(payload));
       sessionStorage.setItem(`solvent_txns_${data.auditId}`, JSON.stringify(sampleTxns));
 
-      router.push(`/audit/${data.auditId}/result`);
+      router.push(`/report/${data.auditId}`);
     } catch (err: any) {
       alert("Error: " + err.message);
     } finally {
@@ -106,7 +106,7 @@ export default function NewAuditPage() {
         sessionStorage.setItem(`solvent_txns_${data.auditId}`, tempTxns);
       }
 
-      router.push(`/audit/${data.auditId}/result`);
+      router.push(`/report/${data.auditId}`);
     } catch (err: any) {
       alert("Submission error: " + err.message);
     } finally {

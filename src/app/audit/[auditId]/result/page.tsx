@@ -5,23 +5,19 @@ import { useParams, useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { SolvencyGauge } from "@/components/SolvencyGauge";
-import { RazorpayModal } from "@/components/RazorpayModal";
 import { PayloadInspectorModal } from "@/components/PayloadInspectorModal";
 import { TeaserResponse, AggregatedStatementPayload } from "@/types";
 import {
-  Lock,
-  Unlock,
   AlertTriangle,
-  Sparkles,
   ArrowRight,
-  TrendingDown,
-  TrendingUp,
   Activity,
   ShieldCheck,
   Eye,
-  SlidersHorizontal,
   Flame,
   FileText,
+  Building2,
+  Sparkles,
+  BarChart3,
 } from "lucide-react";
 
 export default function TeaserResultPage() {
@@ -31,20 +27,16 @@ export default function TeaserResultPage() {
 
   const [teaser, setTeaser] = useState<TeaserResponse | null>(null);
   const [payload, setPayload] = useState<AggregatedStatementPayload | null>(null);
-  const [token, setToken] = useState<string>("");
   const [tone, setTone] = useState<"NEUTRAL" | "PLAYFUL">("NEUTRAL");
-  const [payModalOpen, setPayModalOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
 
   useEffect(() => {
     if (!auditId) return;
 
     // Load session data
-    const savedToken = sessionStorage.getItem(`solvent_token_${auditId}`);
     const savedTeaser = sessionStorage.getItem(`solvent_teaser_${auditId}`);
     const savedPayload = sessionStorage.getItem(`solvent_payload_${auditId}`);
 
-    if (savedToken) setToken(savedToken);
     if (savedTeaser) setTeaser(JSON.parse(savedTeaser));
     if (savedPayload) setPayload(JSON.parse(savedPayload));
   }, [auditId]);
@@ -79,16 +71,25 @@ export default function TeaserResultPage() {
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="w-4 h-4 text-liquidity shrink-0" />
             <span className="text-text-muted">
-              Audit ID: <span className="font-mono text-text-primary">{auditId.slice(0, 8)}...</span> • Minimized Aggregate Mode
+              Audit ID: <span className="font-mono text-text-primary">{auditId.slice(0, 8)}...</span> • 100% Free & Unlocked
             </span>
           </div>
-          <button
-            onClick={() => setInspectorOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-text-primary border border-surface-border transition-colors text-[11px] font-mono self-start sm:self-auto"
-          >
-            <Eye className="w-3.5 h-3.5 text-liquidity" />
-            <span>Inspect Transmitted Payload</span>
-          </button>
+          <div className="flex items-center gap-2.5 self-start sm:self-auto">
+            <button
+              onClick={() => setInspectorOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-text-primary border border-surface-border transition-colors text-[11px] font-mono"
+            >
+              <Eye className="w-3.5 h-3.5 text-liquidity" />
+              <span>Inspect Payload</span>
+            </button>
+            <button
+              onClick={() => router.push(`/report/${auditId}`)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-lg bg-liquidity text-canvas font-semibold text-[11px] hover:bg-liquidity-hover transition-colors shadow-emerald-glow"
+            >
+              <span>Full Dossier</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* Top Summary Block */}
@@ -114,7 +115,7 @@ export default function TeaserResultPage() {
           <div className="lg:col-span-7 space-y-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono uppercase tracking-widest text-liquidity px-3 py-1 rounded-full bg-liquidity/10 border border-liquidity/20">
-                Diagnostic Teaser
+                Diagnostic Overview • 100% Free
               </span>
 
               {/* Tone Switcher */}
@@ -158,10 +159,19 @@ export default function TeaserResultPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 text-[11px] text-text-dim font-mono">
-              <span>Scan Window: {payload.periodStart} to {payload.periodEnd} ({payload.periodDays} days)</span>
-              <span>•</span>
-              <span>{payload.quality.parsedRows} rows processed</span>
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2 text-[11px] text-text-dim font-mono">
+                <span>Scan Window: {payload.periodStart} to {payload.periodEnd} ({payload.periodDays} days)</span>
+                <span>•</span>
+                <span>{payload.quality.parsedRows} rows processed</span>
+              </div>
+              <button
+                onClick={() => router.push(`/report/${auditId}`)}
+                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-liquidity hover:text-liquidity-hover underline underline-offset-4"
+              >
+                <span>View Full Forensic Report</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
           </div>
         </div>
@@ -250,94 +260,70 @@ export default function TeaserResultPage() {
           ))}
         </div>
 
-        {/* Masked Merchant Preview with Transparent Paywall */}
-        <div className="relative glass-panel rounded-3xl p-6 sm:p-8 border border-surface-border overflow-hidden">
-          <div className="flex items-center justify-between pb-4 border-b border-surface-border mb-6">
+        {/* Unlocked Top Merchant Clusters */}
+        <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-surface-border space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-surface-border">
             <div>
               <h3 className="text-base font-semibold text-text-primary flex items-center gap-2">
-                <Lock className="w-4 h-4 text-amber-400" /> Top Discretionary Outflow Destinations (Preview)
+                <Building2 className="w-4 h-4 text-liquidity" /> Top Discretionary Outflow Destinations
               </h3>
               <p className="text-xs text-text-muted mt-0.5">
-                Exact merchant identities are revealed in the complete forensic dossier.
+                Primary merchant clusters identified across your statement records.
               </p>
             </div>
-            <span className="text-xs font-mono px-2.5 py-1 rounded bg-zinc-900 border border-surface-border text-amber-400">
-              5 of 15 Clusters
+            <span className="text-xs font-mono px-2.5 py-1 rounded bg-zinc-900 border border-surface-border text-emerald-400">
+              100% Unlocked
             </span>
           </div>
 
-          {/* Masked Rows */}
-          <div className="space-y-3 filter blur-[1.5px] select-none pointer-events-none opacity-60">
-            {teaser.lockedPreview.map((item, idx) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {payload.topMerchants.slice(0, 6).map((item, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/60 border border-surface-border"
+                className="p-4 rounded-xl bg-zinc-900/60 border border-surface-border flex flex-col justify-between space-y-3 hover:border-zinc-700 transition-colors"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-bold text-text-dim">0{idx + 1}</span>
-                  <div>
-                    <p className="text-xs font-semibold text-text-primary font-mono">{item.maskedLabel}</p>
-                    <p className="text-[10px] text-text-dim">{item.category} • {item.txCount} transactions</p>
-                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                    {item.categoryHint?.replace(/_/g, " ") || "Merchant"}
+                  </span>
                 </div>
-                <div className="font-mono text-xs font-bold text-text-primary">
-                  ₹{item.totalINR.toLocaleString("en-IN")}
+                <div>
+                  <p className="text-sm font-semibold text-text-primary font-mono">{item.displayName || item.merchantKey}</p>
+                  <p className="text-[11px] text-text-dim">{item.txCount} transactions recorded</p>
+                </div>
+                <div className="pt-2 border-t border-surface-border flex justify-between items-baseline">
+                  <span className="text-[10px] text-text-dim font-mono">Total Outflow</span>
+                  <span className="font-mono text-sm font-bold text-text-primary">
+                    ₹{item.totalINR.toLocaleString("en-IN")}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Paywall Overlay Panel */}
-          <div className="absolute inset-0 z-20 flex items-center justify-center p-6 bg-gradient-to-t from-black/95 via-black/80 to-black/40">
-            <div className="max-w-md w-full p-6 rounded-2xl bg-surface border border-liquidity/30 shadow-2xl text-center space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-liquidity/10 border border-liquidity/20 flex items-center justify-center text-liquidity mx-auto shadow-emerald-glow">
-                <Unlock className="w-6 h-6" />
-              </div>
-
-              <div>
-                <h4 className="text-lg font-bold text-text-primary">
-                  Unlock Your Complete Forensic Dossier
-                </h4>
-                <p className="text-xs text-text-muted mt-1 leading-relaxed">
-                  Reveal unmasked merchant identities, temporal 24x7 heatmap, recurring subscription matrix, and 3 custom 30-day savings rules.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-zinc-900 border border-surface-border flex items-baseline justify-center gap-2">
-                <span className="text-2xl font-mono font-bold text-text-primary">₹49</span>
-                <span className="text-xs text-text-dim">one-time payment for this audit</span>
-              </div>
-
-              <button
-                onClick={() => setPayModalOpen(true)}
-                className="w-full py-3 px-4 rounded-xl text-xs font-semibold bg-liquidity text-canvas hover:bg-liquidity-hover transition-colors shadow-emerald-glow flex items-center justify-center gap-2"
-              >
-                <span>Unlock Full Report (₹49)</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              <p className="text-[10px] text-text-dim flex items-center justify-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-liquidity" />
-                Payment is confirmed securely by our server before your report unlocks.
+          {/* Full Report Action Callout */}
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-surface to-surface border border-liquidity/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="space-y-1 text-center sm:text-left">
+              <span className="text-xs font-mono uppercase tracking-wider text-liquidity flex items-center justify-center sm:justify-start gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> Complete Forensic Report Available
+              </span>
+              <p className="text-sm text-text-primary font-medium">
+                Temporal 24x7 heatmap, recurring subscriptions matrix, 30-day liquidity rules & exports are ready.
               </p>
             </div>
+            <button
+              onClick={() => router.push(`/report/${auditId}`)}
+              className="px-6 py-3 rounded-xl text-xs font-semibold bg-liquidity text-canvas hover:bg-liquidity-hover transition-colors shadow-emerald-glow flex items-center gap-2 shrink-0"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Open Complete Forensic Dossier</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </main>
 
-      {/* Razorpay Checkout Modal */}
-      <RazorpayModal
-        isOpen={payModalOpen}
-        onClose={() => setPayModalOpen(false)}
-        auditId={auditId}
-        accessToken={token}
-        onSuccess={(url) => {
-          setPayModalOpen(false);
-          router.push(url);
-        }}
-      />
-
-      {/* Payload Inspector Modal */}
       <PayloadInspectorModal
         payload={payload}
         isOpen={inspectorOpen}

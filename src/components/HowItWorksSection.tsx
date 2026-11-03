@@ -1,4 +1,4 @@
-import { FileUp, Cpu, Eye, Unlock } from "lucide-react";
+import { FileUp, Cpu, Eye, BarChart3 } from "lucide-react";
 
 export function HowItWorksSection() {
   const steps = [
@@ -20,19 +20,19 @@ export function HowItWorksSection() {
     },
     {
       num: "03",
-      title: "Free Spending Diagnosis",
-      desc: "Instantly inspect your Spending Pattern Index, micro-drain totals, and critical cash leaks for free.",
+      title: "Instant Spending Diagnosis",
+      desc: "Inspect your Spending Pattern Index, micro-drain totals, and critical cash leaks in seconds.",
       icon: Eye,
-      badge: "Free Teaser",
+      badge: "100% Free",
       highlight: "Inspect exact outgoing payload before any submit.",
     },
     {
       num: "04",
-      title: "Forensic Dossier Unlock",
-      desc: "Unlock the full 15-merchant ranking, temporal heatmap, recurring matrix, and 30-day savings rules for ₹49.",
-      icon: Unlock,
-      badge: "₹49 One-Time",
-      highlight: "Never a subscription. Server-verified unlock.",
+      title: "Full Forensic Dossier",
+      desc: "Explore complete 15-merchant ranking, temporal heatmap, recurring subscriptions matrix, and 30-day rules.",
+      icon: BarChart3,
+      badge: "Zero Paywalls",
+      highlight: "Completely free open access with zero fees.",
     },
   ];
 
@@ -41,13 +41,13 @@ export function HowItWorksSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
           <span className="text-xs uppercase tracking-widest font-mono text-liquidity px-3 py-1 rounded-full bg-liquidity/10 border border-liquidity/20">
-            Simple • Powerful • Private
+            Simple • Powerful • 100% Free
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-primary">
             How Solvent Works
           </h2>
           <p className="text-sm text-text-muted">
-            Engineered to analyze Indian UPI and banking habits without compromising your privacy boundaries.
+            Engineered to analyze Indian UPI and banking habits without compromising your privacy boundaries or asking for payments.
           </p>
         </div>
 

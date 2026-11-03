@@ -146,7 +146,7 @@ export default function FullReportPage() {
                 Unlocked Forensic Dossier
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Verified Paid Access
+                100% Free Analysis
               </span>
             </div>
             <p className="text-xs text-text-dim">

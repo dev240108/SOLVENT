@@ -1,10 +1,10 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { ShieldAlert, FileText, CheckCircle2 } from "lucide-react";
+import { FileText } from "lucide-react";
 
 export const metadata = {
   title: "Terms & Conditions — Solvent",
-  description: "Terms of service, pricing disclosures, refund policy, and educational indicators.",
+  description: "Terms of service, free access disclosures, and educational indicators.",
 };
 
 export default function TermsPage() {
@@ -16,7 +16,7 @@ export default function TermsPage() {
         <div className="space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono text-liquidity bg-liquidity/10 border border-liquidity/20">
             <FileText className="w-3.5 h-3.5" />
-            <span>Governance & Commercial Terms</span>
+            <span>Governance & Access Terms</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-primary">
             Terms of Service & Disclaimers
@@ -37,16 +37,15 @@ export default function TermsPage() {
           </p>
         </div>
 
-        {/* 2. Commercial Pricing & One-Time Payment */}
+        {/* 2. 100% Free Service */}
         <div className="p-6 rounded-2xl bg-surface border border-surface-border space-y-3">
           <h2 className="text-base font-semibold text-text-primary">
-            2. ₹49 One-Time Payment & Refund Policy
+            2. 100% Free & Open-Access Platform
           </h2>
           <p className="text-xs text-text-muted leading-relaxed">
-            - Solvent provides a free diagnostic teaser showing macro cash flow totals and the critical spending leak finding.<br />
-            - The complete forensic dossier (full 15-merchant ranking, temporal heatmap, recurring matrix, and 30-day savings scenarios) is unlocked for a one-time purchase of <strong>₹49 (inclusive of applicable taxes)</strong> per individual audit session.<br />
-            - <strong>No Subscription:</strong> You are not enrolled in recurring billing or autopay.<br />
-            - <strong>Refund Policy:</strong> Because full report generation occurs immediately upon server payment verification and all derived data is delivered digitally to your browser, purchases are generally non-refundable once the dossier has been generated. If a verified technical error prevented your report from generating after successful charge, contact <a href="mailto:support@solvent.money" className="text-liquidity underline">support@solvent.money</a> within 48 hours with your Razorpay payment ID for an immediate refund.
+            - Solvent is provided completely <strong>free of charge</strong> with all forensic capabilities fully unlocked.<br />
+            - <strong>No Fees or Subscriptions:</strong> You are never charged, and no payment information or banking credentials are ever requested.<br />
+            - All reports, exports (CSV, PDF, 9:16 Social Story), and analytics are provided with zero paywalls.
           </p>
         </div>
 
@@ -67,7 +66,7 @@ export default function TermsPage() {
             4. Acceptable Use
           </h2>
           <p className="text-xs text-text-muted leading-relaxed">
-            You agree not to reverse engineer, submit malicious file binaries, scrape the API endpoints, replay cryptographic signatures, or attempt unauthorized capability token forgery. Violations will result in immediate IP banning and access revocation.
+            You agree not to reverse engineer, submit malicious file binaries, scrape the API endpoints, or attempt unauthorized capability token forgery.
           </p>
         </div>
       </main>

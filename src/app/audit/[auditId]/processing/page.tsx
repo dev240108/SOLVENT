@@ -29,12 +29,12 @@ export default function ProcessingPage() {
         } else {
           clearInterval(interval);
           setTimeout(() => {
-            router.push(`/audit/${auditId}/result`);
-          }, 800);
+            router.push(`/report/${auditId}`);
+          }, 300);
           return prev;
         }
       });
-    }, 700);
+    }, 250);
 
     return () => clearInterval(interval);
   }, [auditId, router, stages.length]);
@@ -104,3 +104,4 @@ export default function ProcessingPage() {
     </div>
   );
 }
+

@@ -35,9 +35,9 @@ export default function PrivacyPage() {
       handling: "Normalized to known brand labels locally; unknown entities pseudonymized.",
     },
     {
-      data: "Payment Metadata (Razorpay Order/Payment IDs)",
-      class: "Transaction Record",
-      handling: "Stored securely for audit verification and 30-day report access.",
+      data: "Payment & Banking Credentials",
+      class: "Zero Data Stored",
+      handling: "Solvent is 100% free. No cards, payments, bank logins, or Account Aggregator tokens are ever requested.",
     },
   ];
 

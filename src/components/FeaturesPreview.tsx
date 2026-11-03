@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Flame, ArrowUpRight, Zap, Clock, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, ArrowUpRight, Zap, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 export function FeaturesPreview() {
@@ -12,7 +12,7 @@ export function FeaturesPreview() {
           <div className="lg:col-span-5 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Detailed Insights • Real Savings</span>
+              <span>Detailed Insights • 100% Free</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-primary leading-tight">
@@ -20,7 +20,7 @@ export function FeaturesPreview() {
             </h2>
 
             <p className="text-sm text-text-muted leading-relaxed">
-              Unlock deep forensic insights like merchant breakdowns, hidden subscription leaks, and 3 actionable 30-day liquidity rules computed deterministically.
+              Explore deep forensic insights including complete merchant breakdowns, hidden subscription leaks, and 3 actionable 30-day liquidity rules computed deterministically in seconds.
             </p>
 
             <div className="space-y-3.5 pt-2">
@@ -48,11 +48,11 @@ export function FeaturesPreview() {
                 href="/audit/new"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-semibold bg-liquidity text-canvas hover:bg-liquidity-hover transition-colors shadow-emerald-glow"
               >
-                <span>Unlock Full Report for ₹49</span>
+                <span>Analyze Your Statement Free</span>
                 <ArrowUpRight className="w-4 h-4" />
               </Link>
               <span className="text-xs text-text-dim flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-liquidity" /> Secure Razorpay Checkout
+                <ShieldCheck className="w-3.5 h-3.5 text-liquidity" /> 100% Free • No Sign-up Required
               </span>
             </div>
           </div>
