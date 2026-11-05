@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Lock, Eye, EyeOff, ShieldCheck, X } from "lucide-react";
+import { Lock, Eye, EyeOff, ShieldCheck, X, Loader2, AlertCircle } from "lucide-react";
 
 interface PasswordPromptModalProps {
   isOpen: boolean;
   fileName: string;
   errorMessage?: string | null;
+  isLoading?: boolean;
   onClose: () => void;
   onSubmit: (password: string) => void;
 }
@@ -15,6 +16,7 @@ export function PasswordPromptModal({
   isOpen,
   fileName,
   errorMessage,
+  isLoading = false,
   onClose,
   onSubmit,
 }: PasswordPromptModalProps) {
@@ -32,16 +34,17 @@ export function PasswordPromptModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     if (!password.trim()) {
       setError("Please enter the document password.");
       return;
     }
     setError(null);
     onSubmit(password.trim());
-    setPassword("");
   };
 
   const handleClose = () => {
+    if (isLoading) return;
     setPassword("");
     setError(null);
     onClose();
@@ -49,7 +52,7 @@ export function PasswordPromptModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-[#121215] border border-surface-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden p-6">
+      <div className="bg-[#121215] border border-surface-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden p-6 animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between pb-4 border-b border-surface-border mb-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
@@ -64,7 +67,8 @@ export function PasswordPromptModal({
           </div>
           <button
             onClick={handleClose}
-            className="p-1 rounded-lg text-text-muted hover:text-text-primary transition-colors"
+            disabled={isLoading}
+            className="p-1 rounded-lg text-text-muted hover:text-text-primary transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
@@ -73,9 +77,16 @@ export function PasswordPromptModal({
         <div className="mb-4 p-3 rounded-lg bg-zinc-900/60 border border-surface-border text-xs text-text-muted flex items-start gap-2.5">
           <ShieldCheck className="w-4 h-4 text-liquidity shrink-0 mt-0.5" />
           <p>
-            Enter your statement password to decrypt it. Solvent never stores, shares, or logs document passwords.
+            Enter your statement password to decrypt it. Solvent parses your statement securely in your browser and never saves document passwords.
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-xs text-rose-300 flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -86,24 +97,26 @@ export function PasswordPromptModal({
               <input
                 type={showPassword ? "text" : "password"}
                 autoComplete="off"
+                disabled={isLoading}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   setError(null);
                 }}
                 placeholder="e.g. DOB + PAN or Account Number"
-                className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-canvas border border-surface-border text-sm text-text-primary placeholder:text-zinc-600 focus:outline-none focus:border-liquidity transition-colors font-mono"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-canvas border border-surface-border text-sm text-text-primary placeholder:text-zinc-600 focus:outline-none focus:border-liquidity transition-colors font-mono disabled:opacity-50"
                 autoFocus
               />
               <button
                 type="button"
+                tabIndex={-1}
+                disabled={isLoading}
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-dim hover:text-text-primary"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-dim hover:text-text-primary disabled:opacity-50"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            {error && <p className="text-xs text-rose-400 mt-1.5 font-medium">{error}</p>}
           </div>
 
           <div className="pt-2 text-[11px] text-text-dim border-t border-surface-border">
@@ -119,16 +132,25 @@ export function PasswordPromptModal({
           <div className="flex items-center justify-end gap-3 pt-3">
             <button
               type="button"
+              disabled={isLoading}
               onClick={handleClose}
-              className="px-4 py-2 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary border border-surface-border transition-colors"
+              className="px-4 py-2 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary border border-surface-border transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-lg text-xs font-semibold bg-liquidity text-canvas hover:bg-liquidity-hover transition-colors shadow-emerald-glow"
+              disabled={isLoading}
+              className="inline-flex items-center justify-center px-5 py-2 rounded-lg text-xs font-semibold bg-liquidity text-canvas hover:bg-liquidity-hover transition-colors shadow-emerald-glow disabled:opacity-60"
             >
-              Unlock & Analyze
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <span>Decrypting Statement...</span>
+                </>
+              ) : (
+                "Unlock & Analyze"
+              )}
             </button>
           </div>
         </form>

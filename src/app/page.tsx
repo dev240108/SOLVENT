@@ -20,12 +20,14 @@ export default function LandingPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   // Trigger Synthetic Sample Statement
   const handleTrySample = async () => {
     try {
       setIsProcessing(true);
+      setUploadError(null);
       const sampleTxns = getSyntheticTransactions();
       const payload = buildAggregatedPayload(sampleTxns, {
         parsedRows: sampleTxns.length,
@@ -63,6 +65,7 @@ export default function LandingPage() {
     try {
       setIsProcessing(true);
       setPasswordError(null);
+      setUploadError(null);
       setPendingFile(file);
 
       let result: any;
@@ -81,11 +84,12 @@ export default function LandingPage() {
       if (result.isEncrypted) {
         setPasswordError(null);
         setPasswordModalOpen(true);
+        setIsProcessing(false);
         return;
       }
 
       if (!result.success || !result.payload || !result.transactions) {
-        alert(result.error || "Unable to extract transactions from this statement. Please check format.");
+        setUploadError(result.error || "Unable to extract transactions from this statement. Please check the file format.");
         return;
       }
 
@@ -108,7 +112,7 @@ export default function LandingPage() {
 
       router.push(`/report/${data.auditId}`);
     } catch (err: any) {
-      alert("File parsing error: " + err.message);
+      setUploadError(err.message || "File parsing error. Please verify the document.");
     } finally {
       setIsProcessing(false);
     }
@@ -133,11 +137,12 @@ export default function LandingPage() {
       }
 
       if (!result.success || !result.payload || !result.transactions) {
-        setPasswordError(result.error || "Unable to extract transactions from this statement.");
+        setPasswordError(result.error || "Unable to extract transactions from this statement. Please ensure this is an official bank statement PDF.");
         return;
       }
 
       setPasswordModalOpen(false);
+      setPasswordError(null);
 
       // Immediately process payload
       const res = await fetch("/api/audit/teaser", {
@@ -215,6 +220,7 @@ export default function LandingPage() {
                   onFileSelect={handleFileSelect}
                   onTrySample={handleTrySample}
                   isProcessing={isProcessing}
+                  externalError={uploadError}
                 />
               </div>
             </div>
@@ -312,6 +318,7 @@ export default function LandingPage() {
         isOpen={passwordModalOpen}
         fileName={pendingFile?.name || "statement.pdf"}
         errorMessage={passwordError}
+        isLoading={isProcessing}
         onClose={() => {
           setPasswordModalOpen(false);
           setPasswordError(null);

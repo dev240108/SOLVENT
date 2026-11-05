@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     let rejectedCount = 0;
 
     // 1. Group lines into distinct transaction blocks starting with dates
-    const dateRegex = /\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}-\d{2}-\d{2}|\d{1,2}[-\s][A-Za-z]{3}[-\s]\d{2,4})\b/;
+    const dateRegex = /\b(\d{1,2}[/\-.][A-Za-z]{3}[/\-.]\d{2,4}|\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4})\b/i;
     
     interface RawTxnBlock {
       dateStr: string;
@@ -125,6 +125,37 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Helper to extract amounts from text
+    const extractAmountsFromText = (text: string, dateStr?: string): number[] => {
+      let cleaned = text;
+      if (dateStr) {
+        cleaned = cleaned.replace(dateStr, " ");
+      }
+      // Remove time stamps (HH:MM:SS or HH:MM)
+      cleaned = cleaned.replace(/\b([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\b/g, " ");
+
+      const amountRegex = /(?:(?:INR|Rs\.?|₹)\s*)?\b([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{1,2})?|[0-9]+\.[0-9]{1,2}|[0-9]+)\b/g;
+      const matches = Array.from(cleaned.matchAll(amountRegex));
+      const amounts: number[] = [];
+
+      for (const m of matches) {
+        const rawNum = m[1];
+        if (!rawNum) continue;
+
+        // Skip obvious account numbers or reference IDs (9+ digits without decimal point)
+        if (!rawNum.includes(".") && rawNum.replace(/,/g, "").length >= 9) {
+          continue;
+        }
+
+        const parsed = parseAmount(rawNum);
+        // Filter out years and 0
+        if (parsed > 0 && parsed !== 2023 && parsed !== 2024 && parsed !== 2025 && parsed !== 2026 && parsed !== 2027) {
+          amounts.push(parsed);
+        }
+      }
+      return amounts;
+    };
+
     // 2. Parse each transaction block thoroughly
     for (const block of blocks) {
       const isoDate = normalizeDate(block.dateStr);
@@ -145,18 +176,7 @@ export async function POST(req: NextRequest) {
       const timeMatch = blockText.match(/\b([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\b/);
       const time = timeMatch ? `${timeMatch[1].padStart(2, "0")}:${timeMatch[2]}` : null;
 
-      // Find all monetary numbers
-      const amountRegex = /(?:(?:INR|Rs\.?|₹)\s*)?([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})|\b[0-9]+\.[0-9]{2}\b)/g;
-      const matches = Array.from(blockText.matchAll(amountRegex));
-      const amounts: number[] = [];
-
-      for (const m of matches) {
-        const parsed = parseAmount(m[1]);
-        // Filter out false positives (e.g. years, pin codes)
-        if (parsed > 0 && parsed !== 2024 && parsed !== 2025 && parsed !== 2026 && parsed !== 2027) {
-          amounts.push(parsed);
-        }
-      }
+      const amounts = extractAmountsFromText(blockText, block.dateStr);
 
       if (amounts.length === 0) {
         rejectedCount++;
@@ -222,6 +242,40 @@ export async function POST(req: NextRequest) {
         categoryHint,
         parseConfidence: 0.96,
       });
+    }
+
+    // 3. Fallback: If blocks yielded 0 transactions, try line-by-line parsing
+    if (transactions.length === 0) {
+      for (const line of lines) {
+        const dateMatch = line.match(dateRegex);
+        if (!dateMatch) continue;
+
+        const isoDate = normalizeDate(dateMatch[1]);
+        if (!isoDate) continue;
+
+        const lineLower = line.toLowerCase();
+        if (lineLower.includes("opening balance") || lineLower.includes("closing balance")) continue;
+
+        const lineAmounts = extractAmountsFromText(line, dateMatch[1]);
+        if (lineAmounts.length === 0) continue;
+
+        const txAmount = lineAmounts[0];
+        const isCredit = /\b(cr|credit|deposit|salary|refund)\b/i.test(lineLower);
+        const type: TransactionType = isCredit ? "CREDIT" : "DEBIT";
+
+        const { name: merchantKey, category: categoryHint } = cleanMerchantName(line, txAmount, type);
+
+        transactions.push({
+          date: isoDate,
+          time: null,
+          merchantKey,
+          amountINR: Math.round(txAmount * 100) / 100,
+          type,
+          timeBucket: "UNKNOWN",
+          categoryHint,
+          parseConfidence: 0.92,
+        });
+      }
     }
 
     if (transactions.length === 0) {

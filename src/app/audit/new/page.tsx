@@ -16,11 +16,13 @@ export default function NewAuditPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const handleTrySample = async () => {
     try {
       setIsProcessing(true);
+      setUploadError(null);
       const sampleTxns = getSyntheticTransactions();
       const payload = buildAggregatedPayload(sampleTxns, {
         parsedRows: sampleTxns.length,
@@ -54,6 +56,7 @@ export default function NewAuditPage() {
     try {
       setIsProcessing(true);
       setPasswordError(null);
+      setUploadError(null);
       setPendingFile(file);
 
       let result: any;
@@ -72,11 +75,12 @@ export default function NewAuditPage() {
       if (result.isEncrypted) {
         setPasswordError(null);
         setPasswordModalOpen(true);
+        setIsProcessing(false);
         return;
       }
 
       if (!result.success || !result.payload || !result.transactions) {
-        alert(result.error || "Could not parse transactions from this statement format.");
+        setUploadError(result.error || "Unable to extract transactions from this statement. Please check the file format.");
         return;
       }
 
@@ -97,7 +101,7 @@ export default function NewAuditPage() {
 
       router.push(`/report/${data.auditId}`);
     } catch (err: any) {
-      alert("Parsing error: " + err.message);
+      setUploadError(err.message || "Parsing error. Please check the document.");
     } finally {
       setIsProcessing(false);
     }
@@ -122,11 +126,12 @@ export default function NewAuditPage() {
       }
 
       if (!result.success || !result.payload || !result.transactions) {
-        setPasswordError(result.error || "Unable to extract transactions from this statement.");
+        setPasswordError(result.error || "Unable to extract transactions from this statement. Please check if this is an official bank statement PDF.");
         return;
       }
 
       setPasswordModalOpen(false);
+      setPasswordError(null);
 
       const res = await fetch("/api/audit/teaser", {
         method: "POST",
@@ -176,6 +181,7 @@ export default function NewAuditPage() {
             onFileSelect={handleFileSelect}
             onTrySample={handleTrySample}
             isProcessing={isProcessing}
+            externalError={uploadError}
           />
 
           <div className="pt-4 border-t border-surface-border grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-text-dim">
@@ -199,6 +205,7 @@ export default function NewAuditPage() {
         isOpen={passwordModalOpen}
         fileName={pendingFile?.name || "statement.pdf"}
         errorMessage={passwordError}
+        isLoading={isProcessing}
         onClose={() => {
           setPasswordModalOpen(false);
           setPasswordError(null);

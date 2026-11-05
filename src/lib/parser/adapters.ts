@@ -32,7 +32,7 @@ export function getTimeBucket(timeStr: string | null | undefined): TimeBucket {
 }
 
 /**
- * Normalizes Indian date formats (DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD) to ISO YYYY-MM-DD
+ * Normalizes Indian date formats (DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD Mon YYYY, YYYY-MM-DD, 2-digit years) to ISO YYYY-MM-DD
  */
 export function normalizeDate(rawDate: string): string | null {
   if (!rawDate) return null;
@@ -41,22 +41,48 @@ export function normalizeDate(rawDate: string): string | null {
   // YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
 
-  // DD/MM/YYYY or DD-MM-YYYY
-  const dmyMatch = clean.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+  // DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY or 2-digit years (DD/MM/YY, DD-MM-YY, DD.MM.YY)
+  const dmyMatch = clean.match(/^(\d{1,2})[/\-. ](\d{1,2})[/\-. ](\d{2,4})/);
   if (dmyMatch) {
     const day = dmyMatch[1].padStart(2, "0");
     const month = dmyMatch[2].padStart(2, "0");
-    const year = dmyMatch[3];
-    return `${year}-${month}-${day}`;
+    let year = dmyMatch[3];
+    if (year.length === 2) {
+      year = (parseInt(year, 10) > 70 ? "19" : "20") + year;
+    }
+    const m = parseInt(month, 10);
+    const d = parseInt(day, 10);
+    if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+      return `${year}-${month}-${day}`;
+    }
   }
 
-  // DD Mon YYYY (e.g. 15 Sep 2026 or 15-Sep-26)
-  const monMatch = clean.match(/^(\d{1,2})[-/\s]([A-Za-z]{3})[-/\s](\d{2,4})/);
+  // DD Mon YYYY (e.g. 15 Sep 2026, 15-Sep-26, 15.Sep.2024, 01-OCT-24, 1-Oct-2024)
+  const monMatch = clean.match(/^(\d{1,2})[/\-. ]([A-Za-z]{3,9})[/\-. ](\d{2,4})/);
   if (monMatch) {
     const day = monMatch[1].padStart(2, "0");
-    const monthStr = monMatch[2].toLowerCase();
+    const monthStr = monMatch[2].toLowerCase().slice(0, 3);
     let year = monMatch[3];
-    if (year.length === 2) year = "20" + year;
+    if (year.length === 2) {
+      year = (parseInt(year, 10) > 70 ? "19" : "20") + year;
+    }
+    const months: Record<string, string> = {
+      jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+      jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12"
+    };
+    const month = months[monthStr];
+    if (month) return `${year}-${month}-${day}`;
+  }
+
+  // Mon DD, YYYY (e.g. Sep 15, 2024)
+  const usMatch = clean.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{2,4})/);
+  if (usMatch) {
+    const monthStr = usMatch[1].toLowerCase().slice(0, 3);
+    const day = usMatch[2].padStart(2, "0");
+    let year = usMatch[3];
+    if (year.length === 2) {
+      year = (parseInt(year, 10) > 70 ? "19" : "20") + year;
+    }
     const months: Record<string, string> = {
       jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
       jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12"

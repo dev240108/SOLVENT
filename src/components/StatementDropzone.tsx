@@ -1,23 +1,31 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { UploadCloud, FileSpreadsheet, FileText, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { UploadCloud, FileSpreadsheet, FileText, Sparkles, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
 interface StatementDropzoneProps {
   onFileSelect: (file: File) => void;
   onTrySample: () => void;
   isProcessing?: boolean;
+  externalError?: string | null;
 }
 
 export function StatementDropzone({
   onFileSelect,
   onTrySample,
   isProcessing = false,
+  externalError = null,
 }: StatementDropzoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (externalError) {
+      setErrorMessage(externalError);
+    }
+  }, [externalError]);
 
   const validateAndHandle = (file: File) => {
     setErrorMessage(null);
@@ -43,6 +51,7 @@ export function StatementDropzone({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    if (isProcessing) return;
     setIsDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       validateAndHandle(e.dataTransfer.files[0]);
@@ -55,13 +64,17 @@ export function StatementDropzone({
       <div
         onDragOver={(e) => {
           e.preventDefault();
-          setIsDragOver(true);
+          if (!isProcessing) setIsDragOver(true);
         }}
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => {
+          if (!isProcessing) fileInputRef.current?.click();
+        }}
         className={`relative cursor-pointer rounded-2xl border-2 border-dashed p-8 sm:p-10 transition-all text-center group ${
-          isDragOver
+          isProcessing
+            ? "border-liquidity/40 bg-liquidity/5 cursor-wait"
+            : isDragOver
             ? "border-liquidity bg-liquidity/5 scale-[1.01]"
             : "border-surface-border hover:border-liquidity/40 bg-surface/50 hover:bg-surface/80"
         }`}
@@ -70,6 +83,7 @@ export function StatementDropzone({
           ref={fileInputRef}
           type="file"
           accept=".csv,.pdf,text/csv,application/pdf"
+          disabled={isProcessing}
           className="hidden"
           onChange={(e) => {
             if (e.target.value && e.target.files?.[0]) {
@@ -79,16 +93,24 @@ export function StatementDropzone({
         />
 
         <div className="flex flex-col items-center justify-center space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-surface border border-surface-border flex items-center justify-center text-liquidity group-hover:scale-110 group-hover:border-liquidity/40 transition-all shadow-inner">
-            <UploadCloud className="w-7 h-7" />
+          <div className={`w-14 h-14 rounded-2xl bg-surface border border-surface-border flex items-center justify-center text-liquidity shadow-inner transition-all ${
+            isProcessing ? "animate-pulse border-liquidity/50" : "group-hover:scale-110 group-hover:border-liquidity/40"
+          }`}>
+            {isProcessing ? (
+              <Loader2 className="w-7 h-7 animate-spin text-liquidity" />
+            ) : (
+              <UploadCloud className="w-7 h-7" />
+            )}
           </div>
 
           <div className="space-y-1">
             <p className="text-sm sm:text-base font-semibold text-text-primary">
-              Drop your bank or UPI statement here
+              {isProcessing ? "Analyzing your statement..." : "Drop your bank or UPI statement here"}
             </p>
             <p className="text-xs text-text-dim">
-              Supports <span className="text-text-muted font-medium">CSV</span> or <span className="text-text-muted font-medium">PDF</span> (up to 15 MB / ~5,000 transactions)
+              {isProcessing
+                ? "Checking transactions securely in your browser"
+                : <>Supports <span className="text-text-muted font-medium">CSV</span> or <span className="text-text-muted font-medium">PDF</span> (up to 15 MB / ~5,000 transactions)</>}
             </p>
           </div>
 
@@ -102,14 +124,14 @@ export function StatementDropzone({
           </div>
 
           <p className="text-[11px] text-text-dim pt-2">
-            Local browser processing • No bank login • Original file never uploaded
+            100% Free • Private Browser Analysis • No Bank Login Required
           </p>
         </div>
       </div>
 
       {/* Error state */}
       {errorMessage && (
-        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-start gap-2.5">
+        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-start gap-2.5 animate-in fade-in">
           <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
           <div>
             <p className="font-medium">{errorMessage}</p>
@@ -125,23 +147,37 @@ export function StatementDropzone({
         <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface border border-surface-border text-xs">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-liquidity/10 border border-liquidity/20 flex items-center justify-center text-liquidity">
-              <CheckCircle2 className="w-4 h-4" />
+              {isProcessing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4" />
+              )}
             </div>
             <div>
               <p className="font-semibold text-text-primary truncate max-w-[200px] sm:max-w-xs">
                 {selectedFile.name}
               </p>
-              <p className="text-[11px] text-text-dim font-mono">
-                {(selectedFile.size / 1024).toFixed(1)} KB • Ready for local parse
+              <p className="text-[11px] text-text-dim font-mono flex items-center gap-1.5">
+                <span>{(selectedFile.size / 1024).toFixed(1)} KB</span>
+                <span>•</span>
+                {isProcessing ? (
+                  <span className="text-liquidity animate-pulse font-medium">Analyzing statement...</span>
+                ) : (
+                  <span>Ready for analysis</span>
+                )}
               </p>
             </div>
           </div>
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setSelectedFile(null);
+              if (!isProcessing) {
+                setSelectedFile(null);
+                setErrorMessage(null);
+              }
             }}
-            className="text-[11px] text-text-muted hover:text-text-primary underline px-2 py-1"
+            disabled={isProcessing}
+            className="text-[11px] text-text-muted hover:text-text-primary underline px-2 py-1 disabled:opacity-40"
           >
             Change
           </button>
@@ -155,7 +191,7 @@ export function StatementDropzone({
           type="button"
           onClick={onTrySample}
           disabled={isProcessing}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-liquidity hover:text-liquidity-hover underline underline-offset-4 decoration-liquidity/30 hover:decoration-liquidity transition-all"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-liquidity hover:text-liquidity-hover underline underline-offset-4 decoration-liquidity/30 hover:decoration-liquidity transition-all disabled:opacity-50"
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span>Load Realistic 60-Day Sample Statement</span>
