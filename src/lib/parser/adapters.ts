@@ -32,63 +32,78 @@ export function getTimeBucket(timeStr: string | null | undefined): TimeBucket {
 }
 
 /**
- * Normalizes Indian date formats (DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD Mon YYYY, YYYY-MM-DD, 2-digit years) to ISO YYYY-MM-DD
+ * Normalizes Indian date formats to ISO YYYY-MM-DD.
+ * Supports: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD/MM/YY, YYYY-MM-DD,
+ *           DD-Mon-YYYY, DD Mon YY, Mon DD YYYY
+ * Returns null for invalid or unparseable dates.
  */
 export function normalizeDate(rawDate: string): string | null {
   if (!rawDate) return null;
   const clean = rawDate.trim();
 
-  // YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
+  // YYYY-MM-DD (ISO)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    const [y, m, d] = clean.split("-").map(Number);
+    if (m >= 1 && m <= 12 && d >= 1 && d <= 31) return clean;
+    return null;
+  }
 
-  // DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY or 2-digit years (DD/MM/YY, DD-MM-YY, DD.MM.YY)
-  const dmyMatch = clean.match(/^(\d{1,2})[/\-. ](\d{1,2})[/\-. ](\d{2,4})/);
+  // DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD/MM/YY, DD-MM-YY, DD.MM.YY
+  const dmyMatch = clean.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/);
   if (dmyMatch) {
-    const day = dmyMatch[1].padStart(2, "0");
-    const month = dmyMatch[2].padStart(2, "0");
-    let year = dmyMatch[3];
-    if (year.length === 2) {
-      year = (parseInt(year, 10) > 70 ? "19" : "20") + year;
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10);
+    let yearStr = dmyMatch[3];
+    if (yearStr.length === 2) {
+      const yr = parseInt(yearStr, 10);
+      yearStr = (yr > 70 ? "19" : "20") + yearStr;
     }
-    const m = parseInt(month, 10);
-    const d = parseInt(day, 10);
-    if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
-      return `${year}-${month}-${day}`;
+    const year = parseInt(yearStr, 10);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 2000 && year <= 2030) {
+      return `${yearStr}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     }
+    return null;
   }
 
-  // DD Mon YYYY (e.g. 15 Sep 2026, 15-Sep-26, 15.Sep.2024, 01-OCT-24, 1-Oct-2024)
-  const monMatch = clean.match(/^(\d{1,2})[/\-. ]([A-Za-z]{3,9})[/\-. ](\d{2,4})/);
+  const MONTH_MAP: Record<string, string> = {
+    jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+    jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12"
+  };
+
+  // DD-Mon-YYYY, DD/Mon/YY, DD.Mon.YYYY, DD Mon YYYY
+  const monMatch = clean.match(/^(\d{1,2})[/\-.\s]([A-Za-z]{3,9})[/\-.\s](\d{2,4})$/);
   if (monMatch) {
-    const day = monMatch[1].padStart(2, "0");
+    const day = parseInt(monMatch[1], 10);
     const monthStr = monMatch[2].toLowerCase().slice(0, 3);
-    let year = monMatch[3];
-    if (year.length === 2) {
-      year = (parseInt(year, 10) > 70 ? "19" : "20") + year;
+    let yearStr = monMatch[3];
+    if (yearStr.length === 2) {
+      const yr = parseInt(yearStr, 10);
+      yearStr = (yr > 70 ? "19" : "20") + yearStr;
     }
-    const months: Record<string, string> = {
-      jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
-      jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12"
-    };
-    const month = months[monthStr];
-    if (month) return `${year}-${month}-${day}`;
+    const month = MONTH_MAP[monthStr];
+    const year = parseInt(yearStr, 10);
+    if (month && day >= 1 && day <= 31 && year >= 2000 && year <= 2030) {
+      return `${yearStr}-${month}-${String(day).padStart(2, "0")}`;
+    }
+    return null;
   }
 
-  // Mon DD, YYYY (e.g. Sep 15, 2024)
-  const usMatch = clean.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{2,4})/);
+  // Mon DD, YYYY or Mon DD YYYY (e.g. Sep 15, 2024)
+  const usMatch = clean.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{2,4})$/);
   if (usMatch) {
     const monthStr = usMatch[1].toLowerCase().slice(0, 3);
-    const day = usMatch[2].padStart(2, "0");
-    let year = usMatch[3];
-    if (year.length === 2) {
-      year = (parseInt(year, 10) > 70 ? "19" : "20") + year;
+    const day = parseInt(usMatch[2], 10);
+    let yearStr = usMatch[3];
+    if (yearStr.length === 2) {
+      const yr = parseInt(yearStr, 10);
+      yearStr = (yr > 70 ? "19" : "20") + yearStr;
     }
-    const months: Record<string, string> = {
-      jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
-      jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12"
-    };
-    const month = months[monthStr];
-    if (month) return `${year}-${month}-${day}`;
+    const month = MONTH_MAP[monthStr];
+    const year = parseInt(yearStr, 10);
+    if (month && day >= 1 && day <= 31 && year >= 2000 && year <= 2030) {
+      return `${yearStr}-${month}-${String(day).padStart(2, "0")}`;
+    }
+    return null;
   }
 
   return null;

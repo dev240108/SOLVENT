@@ -27,6 +27,90 @@ function configurePdfWorker() {
   }
 }
 
+// ── STRICT date regex: only matches real dates, not random numbers ──
+// Matches: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD/MM/YY, YYYY-MM-DD,
+//          DD-Mon-YYYY, DD Mon YYYY, DD/Mon/YY
+const STRICT_DATE_RE = /(?:^|\s)((\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})|(\d{4})-(\d{2})-(\d{2})|(\d{1,2})[/\-.\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[/\-.\s](\d{2,4}))(?=\s|$)/i;
+
+/**
+ * Validates that a matched date string actually represents a plausible date.
+ * Returns ISO YYYY-MM-DD or null.
+ */
+function strictNormalizeDate(raw: string): string | null {
+  const iso = normalizeDate(raw);
+  if (!iso) return null;
+
+  // Validate the ISO date is a real calendar date
+  const [yearStr, monthStr, dayStr] = iso.split("-");
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
+
+  if (year < 2000 || year > 2030) return null;
+  if (month < 1 || month > 12) return null;
+  if (day < 1 || day > 31) return null;
+
+  // Check real date validity
+  const d = new Date(year, month - 1, day);
+  if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) {
+    return null;
+  }
+
+  return iso;
+}
+
+/**
+ * Checks if the PDF text looks like a real bank statement.
+ * A genuine bank statement has a high density of transaction-like lines:
+ * lines starting with dates and containing monetary amounts.
+ */
+function isBankStatement(lines: string[]): boolean {
+  let dateLineCount = 0;
+  let totalMoneyLines = 0;
+
+  for (const line of lines) {
+    const hasDate = STRICT_DATE_RE.test(line);
+    const hasMoney = /(?:₹|Rs\.?|INR)?\s*\d{1,3}(?:,\d{2,3})*\.\d{2}\b/.test(line);
+
+    if (hasDate) dateLineCount++;
+    if (hasMoney) totalMoneyLines++;
+  }
+
+  // A real bank statement has at least 3 date lines and 3 money lines
+  return dateLineCount >= 3 && totalMoneyLines >= 3;
+}
+
+/**
+ * Extracts monetary amounts from a text block.
+ * STRICT: only matches numbers with exactly 2 decimal places (like 450.00, 1,500.50)
+ * or numbers prefixed with ₹/Rs/INR.
+ */
+function extractMonetaryAmounts(text: string): number[] {
+  const amounts: number[] = [];
+
+  // Pattern 1: ₹/Rs/INR prefixed amounts (with or without decimals)
+  const prefixedRegex = /(?:₹|Rs\.?\s*|INR\s+)(\d{1,3}(?:,\d{2,3})*(?:\.\d{1,2})?)/g;
+  let m: RegExpExecArray | null;
+  while ((m = prefixedRegex.exec(text)) !== null) {
+    const parsed = parseAmount(m[1]);
+    if (parsed > 0) amounts.push(parsed);
+  }
+
+  // Pattern 2: Numbers with exactly 2 decimal places (standard bank format: 450.00, 1,50,000.00)
+  const decimalRegex = /\b(\d{1,3}(?:,\d{2,3})*\.\d{2})\b/g;
+  while ((m = decimalRegex.exec(text)) !== null) {
+    const parsed = parseAmount(m[1]);
+    if (parsed > 0 && !amounts.includes(parsed)) {
+      // Filter out years, version numbers, and obviously non-monetary values
+      if (parsed >= 2020 && parsed <= 2030) continue; // Years
+      if (parsed < 0.01) continue; // Too small
+      amounts.push(parsed);
+    }
+  }
+
+  return amounts;
+}
+
 export async function POST(req: NextRequest) {
   let parser: any = null;
   try {
@@ -87,135 +171,133 @@ export async function POST(req: NextRequest) {
       .map((l: string) => l.trim())
       .filter((l: string) => l.length > 0);
 
+    // ── STEP 0: Verify this is actually a bank statement ──
+    if (!isBankStatement(lines)) {
+      return NextResponse.json(
+        {
+          error: "This PDF does not appear to be a bank or UPI statement. Please upload a statement downloaded from your bank's netbanking portal or your UPI app (PhonePe, GPay, Paytm).",
+        },
+        { status: 422 }
+      );
+    }
+
     const transactions: NormalizedTransaction[] = [];
     let rejectedCount = 0;
 
-    // 1. Group lines into distinct transaction blocks starting with dates
-    const dateRegex = /\b([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{2,4}|\d{1,2}[/\-.][A-Za-z]{3,9}[/\-.]\d{2,4}|\d{1,2}[/\-. ]\d{1,2}[/\-. ]\d{2,4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+[A-Za-z]{3,9},?\s+\d{2,4})\b/i;
-    
+    // ── STEP 1: Group lines into transaction blocks starting with valid dates ──
     interface RawTxnBlock {
       dateStr: string;
+      isoDate: string;
       rawText: string;
     }
     const blocks: RawTxnBlock[] = [];
-    let lineBuffer: string[] = [];
+    let pendingLines: string[] = [];
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    // Header/footer/summary patterns to skip entirely
+    const SKIP_LINE_RE = /^(page\s+\d|statement\s+of\s+account|account\s+number|customer\s+id|branch\b|ifsc\b|opening\s+balance|closing\s+balance|total\s+debit|total\s+credit|date\s+particular|date\s+narration|date\s+description|txn\s+date|value\s+date|transaction\s+date|sr\.?\s*no|s\.?\s*no\b)/i;
 
-      // Ignore header/footer boilerplate
-      if (/^(page\s+\d+|statement\s+of\s+account|account\s+number|customer\s+id|branch|ifsc|opening\s+balance|closing\s+balance|total\s+debits|total\s+credits)/i.test(line)) {
-        continue;
+    for (const line of lines) {
+      if (SKIP_LINE_RE.test(line)) continue;
+
+      const dateMatch = line.match(STRICT_DATE_RE);
+      if (dateMatch) {
+        const dateStr = dateMatch[1].trim();
+        const isoDate = strictNormalizeDate(dateStr);
+
+        if (isoDate) {
+          // Start a new block
+          blocks.push({
+            dateStr,
+            isoDate,
+            rawText: line,
+          });
+          pendingLines = [];
+          continue;
+        }
       }
 
-      const match = line.match(dateRegex);
-      if (match) {
-        const prevText = lineBuffer.join(" ").trim();
-        lineBuffer = [];
-        blocks.push({
-          dateStr: match[1],
-          rawText: (prevText ? prevText + " " : "") + line,
-        });
+      // Append to last block (continuation lines)
+      if (blocks.length > 0) {
+        blocks[blocks.length - 1].rawText += " " + line;
       } else {
-        if (blocks.length > 0) {
-          blocks[blocks.length - 1].rawText += " " + line;
-        } else {
-          lineBuffer.push(line);
-        }
+        pendingLines.push(line);
       }
     }
 
-    // Helper to extract amounts from text
-    const extractAmountsFromText = (text: string, dateStr?: string): number[] => {
-      let cleaned = text;
-      if (dateStr) {
-        cleaned = cleaned.replace(dateStr, " ");
-      }
-      // Remove time stamps (HH:MM:SS or HH:MM)
-      cleaned = cleaned.replace(/\b([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\b/g, " ");
-
-      const amountRegex = /(?:(?:INR|Rs\.?|₹)\s*)?\b([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{1,2})?|[0-9]+\.[0-9]{1,2}|[0-9]+)\b/g;
-      const matches = Array.from(cleaned.matchAll(amountRegex));
-      const amounts: number[] = [];
-
-      for (const m of matches) {
-        const rawNum = m[1];
-        if (!rawNum) continue;
-
-        // Skip obvious account numbers or reference IDs (9+ digits without decimal point)
-        if (!rawNum.includes(".") && rawNum.replace(/,/g, "").length >= 9) {
-          continue;
-        }
-
-        const parsed = parseAmount(rawNum);
-        // Filter out years and 0
-        if (parsed > 0 && parsed !== 2023 && parsed !== 2024 && parsed !== 2025 && parsed !== 2026 && parsed !== 2027) {
-          amounts.push(parsed);
-        }
-      }
-      return amounts;
-    };
-
-    // 2. Parse each transaction block thoroughly
+    // ── STEP 2: Parse each transaction block ──
     for (const block of blocks) {
-      const isoDate = normalizeDate(block.dateStr);
-      if (!isoDate) {
-        rejectedCount++;
-        continue;
-      }
-
       const blockText = block.rawText;
       const lower = blockText.toLowerCase();
 
-      // Skip summary / opening balance rows
-      if (lower.includes("opening balance") || lower.includes("brought forward") || lower.includes("b/f")) {
+      // Skip summary/balance rows
+      if (
+        lower.includes("opening balance") ||
+        lower.includes("closing balance") ||
+        lower.includes("brought forward") ||
+        lower.includes("carried forward") ||
+        lower.includes("b/f") ||
+        lower.includes("c/f") ||
+        lower.includes("total debits") ||
+        lower.includes("total credits")
+      ) {
         continue;
       }
 
-      // Extract time if present (HH:MM or HH:MM:SS)
+      // ── Extract time if present ──
       const timeMatch = blockText.match(/\b([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\b/);
       const time = timeMatch ? `${timeMatch[1].padStart(2, "0")}:${timeMatch[2]}` : null;
 
-      const amounts = extractAmountsFromText(blockText, block.dateStr);
+      // ── Extract monetary amounts (STRICT: only .XX decimals or ₹-prefixed) ──
+      // First remove the date portion to avoid parsing date digits as amounts
+      let textWithoutDate = blockText.replace(block.dateStr, " ");
+      // Remove time stamps too
+      if (time) {
+        textWithoutDate = textWithoutDate.replace(/\b[01]?\d|2[0-3]:[0-5]\d(?::[0-5]\d)?\b/, " ");
+      }
+
+      const amounts = extractMonetaryAmounts(textWithoutDate);
 
       if (amounts.length === 0) {
         rejectedCount++;
         continue;
       }
 
-      // Determine Debit vs Credit and transaction amount
+      // ── Determine Debit vs Credit ──
       let type: TransactionType = "DEBIT";
       let txAmount = 0;
 
       const isExplicitCredit =
-        /\b(cr|credit|deposit|salary|refund|cash deposit|interest paid|int\.pd|int earned|by transfer)\b/i.test(lower) ||
-        lower.includes("/cr") ||
-        lower.endsWith("cr");
+        /\b(cr|credit|credited|deposit|deposited|salary|refund|cash\s*deposit|interest\s*paid|int\.?\s*pd|int\s*earned|by\s*transfer|by\s*clg|neft\s*cr|rtgs\s*cr|imps\s*cr)\b/i.test(lower) ||
+        /\/cr\b/i.test(lower) ||
+        /\bcr\s*$/i.test(lower.trim());
 
       const isExplicitDebit =
-        /\b(dr|debit|withdrawal|wdl|atm|pos|to transfer|payment to|purchase)\b/i.test(lower) ||
-        lower.includes("/dr") ||
-        lower.endsWith("dr");
+        /\b(dr|debit|debited|withdrawal|wdl|atm\s*wdl|atm\s*cwl|pos\b|purchase|payment|to\s*transfer|paid|neft\s*dr|rtgs\s*dr|imps\s*dr|ach\s*dr|nach\s*dr|emi)\b/i.test(lower) ||
+        /\/dr\b/i.test(lower) ||
+        /\bdr\s*$/i.test(lower.trim());
 
       if (amounts.length >= 3) {
-        // Table layout: [Withdrawal, Deposit, Balance]
-        const wdl = amounts[0];
-        const dep = amounts[1];
-        if (wdl > 0 && dep === 0) {
+        // Tabular layout: typically [Withdrawal, Deposit, Balance] or [Debit, Credit, Balance]
+        const col1 = amounts[0]; // Withdrawal/Debit amount
+        const col2 = amounts[1]; // Deposit/Credit amount
+        // amounts[2] is Balance — we never use it as txAmount
+
+        // In bank statements with separate columns, one column is 0 or absent
+        if (isExplicitCredit && !isExplicitDebit) {
+          type = "CREDIT";
+          // Credit amount is typically in the second column
+          txAmount = col2 > 0 ? col2 : col1;
+        } else if (isExplicitDebit && !isExplicitCredit) {
           type = "DEBIT";
-          txAmount = wdl;
-        } else if (dep > 0 && wdl === 0) {
-          type = "CREDIT";
-          txAmount = dep;
-        } else if (isExplicitCredit) {
-          type = "CREDIT";
-          txAmount = dep > 0 ? dep : wdl;
+          txAmount = col1 > 0 ? col1 : col2;
         } else {
+          // No explicit marker — use column position heuristic
+          // The smaller non-balance amount is the transaction
           type = "DEBIT";
-          txAmount = wdl > 0 ? wdl : dep;
+          txAmount = col1;
         }
       } else if (amounts.length === 2) {
-        // Table layout: [Txn_Amount, Balance]
+        // [Transaction_Amount, Balance] or [Debit, Credit]
         txAmount = amounts[0];
         type = isExplicitCredit && !isExplicitDebit ? "CREDIT" : "DEBIT";
       } else {
@@ -229,11 +311,11 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // Clean narration and merchant name (no special characters like # or @)
+      // ── Clean merchant name ──
       const { name: merchantKey, category: categoryHint } = cleanMerchantName(blockText, txAmount, type);
 
       transactions.push({
-        date: isoDate,
+        date: block.isoDate,
         time,
         merchantKey,
         amountINR: Math.round(txAmount * 100) / 100,
@@ -244,97 +326,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Fallback: If blocks yielded 0 transactions, try line-by-line parsing
-    if (transactions.length === 0) {
-      for (const line of lines) {
-        const dateMatch = line.match(dateRegex);
-        if (!dateMatch) continue;
-
-        const isoDate = normalizeDate(dateMatch[1]);
-        if (!isoDate) continue;
-
-        const lineLower = line.toLowerCase();
-        if (lineLower.includes("opening balance") || lineLower.includes("closing balance")) continue;
-
-        const lineAmounts = extractAmountsFromText(line, dateMatch[1]);
-        if (lineAmounts.length === 0) continue;
-
-        const txAmount = lineAmounts[0];
-        const isCredit = /\b(cr|credit|deposit|salary|refund)\b/i.test(lineLower);
-        const type: TransactionType = isCredit ? "CREDIT" : "DEBIT";
-
-        const { name: merchantKey, category: categoryHint } = cleanMerchantName(line, txAmount, type);
-
-        transactions.push({
-          date: isoDate,
-          time: null,
-          merchantKey,
-          amountINR: Math.round(txAmount * 100) / 100,
-          type,
-          timeBucket: "UNKNOWN",
-          categoryHint,
-          parseConfidence: 0.92,
-        });
-      }
-    }
-
-    // 4. Fallback: If still 0 transactions, match lines containing monetary amounts with nearest detected dates
-    if (transactions.length === 0) {
-      const allDates: string[] = [];
-      for (const line of lines) {
-        const m = line.match(dateRegex);
-        if (m) {
-          const d = normalizeDate(m[1]);
-          if (d) allDates.push(d);
-        }
-      }
-      const defaultDate = allDates[0] || new Date().toISOString().slice(0, 10);
-
-      let currentDate = defaultDate;
-      for (const line of lines) {
-        const dateMatch = line.match(dateRegex);
-        if (dateMatch) {
-          const d = normalizeDate(dateMatch[1]);
-          if (d) currentDate = d;
-        }
-
-        const lineLower = line.toLowerCase();
-        if (lineLower.includes("opening balance") || lineLower.includes("closing balance") || lineLower.includes("page ")) {
-          continue;
-        }
-
-        const amounts = extractAmountsFromText(line);
-        if (amounts.length > 0) {
-          const txAmount = amounts[0];
-          const isCredit = /\b(cr|credit|deposit|salary|refund)\b/i.test(lineLower);
-          const type: TransactionType = isCredit ? "CREDIT" : "DEBIT";
-          const { name: merchantKey, category: categoryHint } = cleanMerchantName(line, txAmount, type);
-
-          transactions.push({
-            date: currentDate,
-            time: null,
-            merchantKey,
-            amountINR: Math.round(txAmount * 100) / 100,
-            type,
-            timeBucket: "UNKNOWN",
-            categoryHint,
-            parseConfidence: 0.88,
-          });
-        }
-      }
-    }
-
+    // ── STEP 3: Validate results ──
     if (transactions.length === 0) {
       return NextResponse.json(
-        { error: "Could not find readable transaction records in this PDF. Please ensure it is an official bank statement PDF." },
+        {
+          error:
+            "Could not find readable transaction records in this PDF. Please make sure you upload an official bank statement PDF downloaded from your bank's netbanking portal — not a screenshot, scan, or other document.",
+        },
         { status: 422 }
       );
     }
 
+    // ── Quality check: calculate actual confidence ──
+    const totalBlocks = blocks.length;
+    const parsedRatio = totalBlocks > 0 ? transactions.length / totalBlocks : 0;
+    const confidence = Math.min(0.99, Math.max(0.5, parsedRatio));
+
     const payload = buildAggregatedPayload(transactions, {
       parsedRows: transactions.length,
       rejectedRows: rejectedCount,
-      confidence: 0.98,
+      confidence: Math.round(confidence * 100) / 100,
     });
 
     return NextResponse.json({
