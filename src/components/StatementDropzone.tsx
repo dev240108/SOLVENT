@@ -168,19 +168,34 @@ export function StatementDropzone({
               </p>
             </div>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!isProcessing) {
-                setSelectedFile(null);
-                setErrorMessage(null);
-              }
-            }}
-            disabled={isProcessing}
-            className="text-[11px] text-text-muted hover:text-text-primary underline px-2 py-1 disabled:opacity-40"
-          >
-            Change
-          </button>
+          <div className="flex items-center gap-2">
+            {!isProcessing && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onFileSelect(selectedFile);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-liquidity text-canvas hover:bg-liquidity-hover transition-all shadow-emerald-glow"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>Open Dashboard &rarr;</span>
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isProcessing) {
+                  setSelectedFile(null);
+                  setErrorMessage(null);
+                }
+              }}
+              disabled={isProcessing}
+              className="text-[11px] text-text-muted hover:text-text-primary underline px-2 py-1 disabled:opacity-40"
+            >
+              Change
+            </button>
+          </div>
         </div>
       )}
 

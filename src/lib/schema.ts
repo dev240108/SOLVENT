@@ -12,13 +12,13 @@ export const MerchantCategorySchema = z.enum([
 ]);
 
 export const MerchantAggregateSchema = z.object({
-  merchantKey: z.string().min(1).max(64),
+  merchantKey: z.string().min(1).max(256),
   txCount: z.number().int().nonnegative(),
   totalINR: z.number().nonnegative(),
   avgINR: z.number().nonnegative(),
   sampleAmounts: z.array(z.number().nonnegative()).optional(),
   categoryHint: MerchantCategorySchema.optional(),
-  displayName: z.string().max(80).optional(),
+  displayName: z.string().max(256).optional(),
 });
 
 export const AggregatedStatementPayloadSchema = z

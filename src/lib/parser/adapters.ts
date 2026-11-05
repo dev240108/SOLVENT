@@ -216,6 +216,8 @@ export function cleanMerchantName(
     candidate += " (UPI)";
   }
 
+  candidate = candidate.slice(0, 60).trim();
+
   return { name: candidate, category };
 }
 

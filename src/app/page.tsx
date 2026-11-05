@@ -110,7 +110,7 @@ export default function LandingPage() {
       sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(result.payload));
       sessionStorage.setItem(`solvent_txns_${data.auditId}`, JSON.stringify(result.transactions));
 
-      router.push(`/report/${data.auditId}`);
+      window.location.href = `/report/${data.auditId}`;
     } catch (err: any) {
       setUploadError(err.message || "File parsing error. Please verify the document.");
     } finally {
@@ -141,10 +141,7 @@ export default function LandingPage() {
         return;
       }
 
-      setPasswordModalOpen(false);
-      setPasswordError(null);
-
-      // Immediately process payload
+      // Process aggregates on server
       const res = await fetch("/api/audit/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -161,7 +158,8 @@ export default function LandingPage() {
       sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(result.payload));
       sessionStorage.setItem(`solvent_txns_${data.auditId}`, JSON.stringify(result.transactions));
 
-      router.push(`/report/${data.auditId}`);
+      // Force instant navigation to dashboard
+      window.location.href = `/report/${data.auditId}`;
     } catch (err: any) {
       setPasswordError(err.message || "An unexpected error occurred during decryption.");
     } finally {

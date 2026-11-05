@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     let rejectedCount = 0;
 
     // 1. Group lines into distinct transaction blocks starting with dates
-    const dateRegex = /\b(\d{1,2}[/\-.][A-Za-z]{3}[/\-.]\d{2,4}|\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4})\b/i;
+    const dateRegex = /\b([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{2,4}|\d{1,2}[/\-.][A-Za-z]{3,9}[/\-.]\d{2,4}|\d{1,2}[/\-. ]\d{1,2}[/\-. ]\d{2,4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+[A-Za-z]{3,9},?\s+\d{2,4})\b/i;
     
     interface RawTxnBlock {
       dateStr: string;
@@ -275,6 +275,52 @@ export async function POST(req: NextRequest) {
           categoryHint,
           parseConfidence: 0.92,
         });
+      }
+    }
+
+    // 4. Fallback: If still 0 transactions, match lines containing monetary amounts with nearest detected dates
+    if (transactions.length === 0) {
+      const allDates: string[] = [];
+      for (const line of lines) {
+        const m = line.match(dateRegex);
+        if (m) {
+          const d = normalizeDate(m[1]);
+          if (d) allDates.push(d);
+        }
+      }
+      const defaultDate = allDates[0] || new Date().toISOString().slice(0, 10);
+
+      let currentDate = defaultDate;
+      for (const line of lines) {
+        const dateMatch = line.match(dateRegex);
+        if (dateMatch) {
+          const d = normalizeDate(dateMatch[1]);
+          if (d) currentDate = d;
+        }
+
+        const lineLower = line.toLowerCase();
+        if (lineLower.includes("opening balance") || lineLower.includes("closing balance") || lineLower.includes("page ")) {
+          continue;
+        }
+
+        const amounts = extractAmountsFromText(line);
+        if (amounts.length > 0) {
+          const txAmount = amounts[0];
+          const isCredit = /\b(cr|credit|deposit|salary|refund)\b/i.test(lineLower);
+          const type: TransactionType = isCredit ? "CREDIT" : "DEBIT";
+          const { name: merchantKey, category: categoryHint } = cleanMerchantName(line, txAmount, type);
+
+          transactions.push({
+            date: currentDate,
+            time: null,
+            merchantKey,
+            amountINR: Math.round(txAmount * 100) / 100,
+            type,
+            timeBucket: "UNKNOWN",
+            categoryHint,
+            parseConfidence: 0.88,
+          });
+        }
       }
     }
 
