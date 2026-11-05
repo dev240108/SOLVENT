@@ -14,8 +14,8 @@ export function SolvencyGauge({
   score,
   size = 180,
   strokeWidth = 14,
-  label = "Spending Pattern Index",
-  sublabel = "Heuristic diagnostic",
+  label = "Financial Health Score",
+  sublabel = "Based on your spending habits",
 }: SolvencyGaugeProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -28,21 +28,21 @@ export function SolvencyGauge({
       return {
         strokeColor: "#10B981", // Emerald
         glowClass: "drop-shadow-[0_0_12px_rgba(16,185,129,0.4)]",
-        statusText: "Healthy Liquidity",
+        statusText: "Great Financial Health",
         statusBadgeColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
       };
     } else if (safeScore >= 55) {
       return {
         strokeColor: "#F59E0B", // Warning / Amber
         glowClass: "drop-shadow-[0_0_12px_rgba(245,158,11,0.35)]",
-        statusText: "Moderate Friction",
+        statusText: "Room for Improvement",
         statusBadgeColor: "text-amber-400 bg-amber-500/10 border-amber-500/20",
       };
     } else {
       return {
         strokeColor: "#F43F5E", // Rose / Danger
         glowClass: "drop-shadow-[0_0_12px_rgba(244,63,94,0.4)]",
-        statusText: "High Velocity Leak",
+        statusText: "High Extra Spending",
         statusBadgeColor: "text-rose-400 bg-rose-500/10 border-rose-500/20",
       };
     }

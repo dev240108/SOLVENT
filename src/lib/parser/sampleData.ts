@@ -42,8 +42,8 @@ export function getSyntheticTransactions(): NormalizedTransaction[] {
   };
 
   // Salary credits (2 months)
-  addTx(55, "09:30", "Employer Payroll Credit", 45000, "CREDIT", "UNCLASSIFIED", "ACH CR CORP SALARY");
-  addTx(25, "09:30", "Employer Payroll Credit", 45000, "CREDIT", "UNCLASSIFIED", "ACH CR CORP SALARY");
+  addTx(55, "09:30", "Salary Credit", 45000, "CREDIT", "UNCLASSIFIED", "ACH CR CORP SALARY");
+  addTx(25, "09:30", "Salary Credit", 45000, "CREDIT", "UNCLASSIFIED", "ACH CR CORP SALARY");
 
   // Recurring Subscriptions
   addTx(52, "02:15", "Netflix", 649, "DEBIT", "SUBSCRIPTIONS", "NETFLIX INDIA RECURRING DEBIT");
@@ -85,11 +85,11 @@ export function getSyntheticTransactions(): NormalizedTransaction[] {
   for (let d = 59; d >= 1; d--) {
     // 1 to 2 micro-spends almost daily
     const amt1 = 15 + (d * 7) % 75; // e.g. ₹20, ₹35, ₹50, ₹85
-    addTx(d, `11:${(10 + d) % 50}`, "Chai & Tea Cafes", amt1, "DEBIT", "MICRO_QR", "UPI/SCAN/CHAI_CORNER");
+    addTx(d, `11:${(10 + d) % 50}`, "Chai & Tea Stall", amt1, "DEBIT", "MICRO_QR", "UPI/SCAN/CHAI_CORNER");
 
     if (d % 2 === 0) {
       const amt2 = 25 + (d * 11) % 65;
-      addTx(d, `16:${(20 + d) % 50}`, "Micro-QR Tapri", amt2, "DEBIT", "MICRO_QR", "UPI/SCAN/TAPRI_CORNER");
+      addTx(d, `16:${(20 + d) % 50}`, "Local Store / Snacks", amt2, "DEBIT", "MICRO_QR", "UPI/SCAN/TAPRI_CORNER");
     }
   }
 
@@ -99,9 +99,9 @@ export function getSyntheticTransactions(): NormalizedTransaction[] {
   addTx(12, "20:10", "Amazon Shopping", 1240, "DEBIT", "SHOPPING", "AMAZON PAY INDIA");
 
   // Peer to peer transfers
-  addTx(50, "12:00", "Peer Transfer (Rent/Split)", 12500, "DEBIT", "P2P_TRANSFER", "UPI/P2P/HOUSE_RENT");
-  addTx(20, "12:00", "Peer Transfer (Rent/Split)", 12500, "DEBIT", "P2P_TRANSFER", "UPI/P2P/HOUSE_RENT");
-  addTx(35, "19:30", "Peer Transfer", 500, "CREDIT", "P2P_TRANSFER", "UPI/P2P/SPLIT_REFUND");
+  addTx(50, "12:00", "Rent / Housemate Transfer", 12500, "DEBIT", "P2P_TRANSFER", "UPI/P2P/HOUSE_RENT");
+  addTx(20, "12:00", "Rent / Housemate Transfer", 12500, "DEBIT", "P2P_TRANSFER", "UPI/P2P/HOUSE_RENT");
+  addTx(35, "19:30", "Friend UPI Transfer", 500, "CREDIT", "P2P_TRANSFER", "UPI/P2P/SPLIT_REFUND");
 
   return txns;
 }

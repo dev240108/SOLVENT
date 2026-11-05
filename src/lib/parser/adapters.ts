@@ -1,4 +1,4 @@
-import { NormalizedTransaction, TimeBucket, TransactionType } from "@/types";
+import { NormalizedTransaction, TimeBucket, TransactionType, MerchantCategory } from "@/types";
 import { matchBrand } from "./brandDictionary";
 
 export interface StatementAdapter {
@@ -78,19 +78,128 @@ export function parseAmount(val: string | undefined): number {
   return isNaN(num) ? 0 : Math.abs(num);
 }
 
+const BANK_TOKENS = new Set([
+  "HDFC", "SBIN", "SBI", "ICIC", "ICICI", "UTIB", "AXIS", "KKBK", "KOTAK", "PUNB", "PNB",
+  "BARB", "BOB", "YESB", "YES", "IDFB", "IDFC", "INDB", "INDUSIND", "CNRB", "CANARA",
+  "PAYTM", "PYTM", "PHONEPE", "GPAY", "GOOGLEPAY", "BHIM", "UPI", "P2M", "P2P", "P2A",
+  "CR", "DR", "DEBIT", "CREDIT", "REV", "RET", "IMPS", "NEFT", "RTGS", "POS", "EAW",
+  "BIL", "INB", "ACH", "CMS", "NACH", "INF", "VPS"
+]);
+
 /**
- * Creates client-side pseudonym without exposing person's name or VPA
+ * Intelligently cleans and extracts readable merchant names and categories.
+ * Completely eliminates confusing hashes like M_#47EA, and strips # and @ symbols.
  */
-export function clientPseudonymize(rawNarration: string, auditSalt: string): string {
-  // Simple deterministic djb2 hash for client preview
-  let hash = 5381;
-  const str = (rawNarration + auditSalt).toLowerCase();
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash) + str.charCodeAt(i);
-    hash = hash & hash;
+export function cleanMerchantName(
+  rawNarration: string,
+  amount: number,
+  type: TransactionType
+): { name: string; category: MerchantCategory } {
+  if (!rawNarration || rawNarration.trim().length === 0) {
+    if (type === "CREDIT") return { name: "Bank Transfer / Deposit", category: "P2P_TRANSFER" };
+    return { name: "Local Store Payment", category: "UNCLASSIFIED" };
   }
-  const hex = Math.abs(hash).toString(16).padStart(4, "0").slice(0, 4).toUpperCase();
-  return `M_#${hex}`;
+
+  // 1. Check known brands first
+  const brand = matchBrand(rawNarration);
+  if (brand) {
+    return { name: brand.canonicalName, category: brand.category };
+  }
+
+  // 2. Intelligent UPI & Narration Segment Extractor
+  let candidate = "";
+  if (rawNarration.includes("/") || rawNarration.includes("-")) {
+    const delimiter = rawNarration.includes("/") ? "/" : "-";
+    const parts = rawNarration.split(delimiter).map((p) => p.trim()).filter(Boolean);
+    for (const part of parts) {
+      const upper = part.toUpperCase();
+      if (/^\d+$/.test(part)) continue;
+      if (BANK_TOKENS.has(upper)) continue;
+      if (/^\d{2,}[a-zA-Z\d]+$/.test(part)) continue; // Ref numbers
+      if (part.includes("@")) {
+        const vpaUser = part.split("@")[0].replace(/[^a-zA-Z\s]/g, " ").trim();
+        if (vpaUser.length >= 3 && !BANK_TOKENS.has(vpaUser.toUpperCase())) {
+          candidate = vpaUser;
+        }
+        continue;
+      }
+      if (part.length >= 3) {
+        candidate = part;
+        break;
+      }
+    }
+  }
+
+  if (!candidate) {
+    candidate = rawNarration;
+  }
+
+  // 3. Clean up masked card numbers, boilerplate bank phrases & punctuation
+  candidate = candidate.replace(/\b\d*[Xx]+\d*\b/g, " "); // masked cards e.g. 412345XXXXXX
+  candidate = candidate.replace(
+    /\b(pay to|paid to|transfer to|payment from|transfer from|sent to|received from|to transfer|by transfer|payment from phonepe|payment from gpay|payment from paytm|pos txn|upi txn|imps txn|neft txn)\b/gi,
+    " "
+  );
+  candidate = candidate.replace(/@[a-zA-Z0-9._-]+/g, " "); // remove @vpa handles
+  candidate = candidate.replace(/\b\d{5,}\b/g, " "); // remove long numeric IDs
+  candidate = candidate.replace(/[#@/\\_*~^%$&()+={}\[\]|:;\"'<>?,.]/g, " "); // remove special characters
+  candidate = candidate.replace(/\s+/g, " ").trim();
+
+  // Filter out stray bank codes
+  const words = candidate
+    .split(" ")
+    .filter((w) => !BANK_TOKENS.has(w.toUpperCase()) && !/^\d+$/.test(w));
+  candidate = words.join(" ").trim();
+
+  // Format to Title Case
+  if (candidate.length >= 2) {
+    candidate = candidate
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+  }
+
+  // 4. Clean Fallbacks if empty or numeric
+  if (!candidate || candidate.length < 2) {
+    if (amount < 100) return { name: "Local Store / Tea & Snacks (UPI)", category: "MICRO_QR" };
+    if (type === "CREDIT") return { name: "Bank Deposit / Income", category: "P2P_TRANSFER" };
+    return { name: "Local Store Payment (UPI)", category: "MICRO_QR" };
+  }
+
+  // 5. Intelligent Category Assignment
+  let category: MerchantCategory = "UNCLASSIFIED";
+  const lower = candidate.toLowerCase();
+  if (/cafe|tea|coffee|restaurant|sweets|bakes|kitchen|biryani|dhaba|bakery|food|burger|pizza|bar|dining|caterer/i.test(lower)) {
+    category = "FOOD_DINING";
+  } else if (/mart|kirana|supermarket|grocery|provision|store|vegetable|fruits|dairy|milk/i.test(lower)) {
+    category = "QUICK_COMMERCE";
+  } else if (/fuel|petrol|pump|cabs|auto|taxi|toll|fastag|metro|rail/i.test(lower)) {
+    category = "MOBILITY";
+  } else if (/recharge|bill|broadband|electricity|utility|insurance|lic|broadband|wifi/i.test(lower)) {
+    category = "SUBSCRIPTIONS";
+  } else if (/pharmacy|medical|chemist|hospital|clinic|diagnostics/i.test(lower)) {
+    category = "SHOPPING";
+  } else if (amount < 100) {
+    category = "MICRO_QR";
+  } else if (type === "CREDIT") {
+    category = "P2P_TRANSFER";
+  }
+
+  // Add friendly (UPI) indicator if it was a UPI transaction and not already named
+  if (/UPI/i.test(rawNarration) && !candidate.toLowerCase().includes("upi")) {
+    candidate += " (UPI)";
+  }
+
+  return { name: candidate, category };
+}
+
+/**
+ * Backward compatibility alias for clientPseudonymize.
+ * Returns clean human-readable name without hashes.
+ */
+export function clientPseudonymize(rawNarration: string, _auditSalt?: string): string {
+  const result = cleanMerchantName(rawNarration, 100, "DEBIT");
+  return result.name;
 }
 
 // 1. HDFC Bank Adapter
@@ -105,7 +214,7 @@ export const HdfcAdapter: StatementAdapter = {
       h.some((k) => k.includes("deposit") || k.includes("credit"))
     );
   },
-  parseRow(row, _idx, auditSalt) {
+  parseRow(row, _idx) {
     const dateCol = Object.keys(row).find((k) => /date/i.test(k));
     const narrationCol = Object.keys(row).find((k) => /narration|description|details/i.test(k));
     const withdrawalCol = Object.keys(row).find((k) => /withdrawal|debit/i.test(k));
@@ -138,10 +247,8 @@ export const HdfcAdapter: StatementAdapter = {
     const timeMatch = narration.match(/(\d{1,2}:\d{2})/);
     const time = timeMatch ? timeMatch[1] : null;
 
-    // Brand matching
-    const brand = matchBrand(narration);
-    const merchantKey = brand ? brand.canonicalName : clientPseudonymize(narration, auditSalt);
-    const categoryHint = brand ? brand.category : (narration.includes("UPI") ? "MICRO_QR" : "UNCLASSIFIED");
+    // Clean merchant name & category
+    const { name: merchantKey, category: categoryHint } = cleanMerchantName(narration, amount, type);
 
     return {
       date,
@@ -168,7 +275,7 @@ export const SbiAdapter: StatementAdapter = {
       (h.some((k) => k.includes("description")) && h.some((k) => k.includes("ref no")))
     );
   },
-  parseRow(row, _idx, auditSalt) {
+  parseRow(row, _idx) {
     const dateCol = Object.keys(row).find((k) => /txn\s*date|date/i.test(k));
     const descCol = Object.keys(row).find((k) => /description|particulars/i.test(k));
     const debitCol = Object.keys(row).find((k) => /debit/i.test(k));
@@ -199,9 +306,7 @@ export const SbiAdapter: StatementAdapter = {
     const timeMatch = narration.match(/(\d{1,2}:\d{2})/);
     const time = timeMatch ? timeMatch[1] : null;
 
-    const brand = matchBrand(narration);
-    const merchantKey = brand ? brand.canonicalName : clientPseudonymize(narration, auditSalt);
-    const categoryHint = brand ? brand.category : (narration.includes("UPI") ? "MICRO_QR" : "UNCLASSIFIED");
+    const { name: merchantKey, category: categoryHint } = cleanMerchantName(narration, amount, type);
 
     return {
       date,
@@ -227,7 +332,7 @@ export const UpiStatementAdapter: StatementAdapter = {
       h.some((k) => k.includes("paid to") || k.includes("activity") || k.includes("upi transaction id"))
     );
   },
-  parseRow(row, _idx, auditSalt) {
+  parseRow(row, _idx) {
     const dateCol = Object.keys(row).find((k) => /date/i.test(k));
     const descCol = Object.keys(row).find((k) => /paid to|activity|description|details|recipient/i.test(k));
     const typeCol = Object.keys(row).find((k) => /type|money in|money out|status/i.test(k));
@@ -249,9 +354,7 @@ export const UpiStatementAdapter: StatementAdapter = {
     const timeMatch = (row[dateCol] + " " + narration).match(/(\d{1,2}:\d{2})/);
     const time = timeMatch ? timeMatch[1] : null;
 
-    const brand = matchBrand(narration);
-    const merchantKey = brand ? brand.canonicalName : clientPseudonymize(narration, auditSalt);
-    const categoryHint = brand ? brand.category : (amount < 100 ? "MICRO_QR" : "UNCLASSIFIED");
+    const { name: merchantKey, category: categoryHint } = cleanMerchantName(narration, amount, type);
 
     return {
       date,
@@ -272,7 +375,7 @@ export const GenericBankCsvAdapter: StatementAdapter = {
   id: "generic-csv",
   name: "Generic Indian Bank CSV",
   detect: () => true, // Fallback when others don't match
-  parseRow(row, _idx, auditSalt) {
+  parseRow(row, _idx) {
     const keys = Object.keys(row);
     const dateKey = keys.find((k) => /date|dt/i.test(k));
     const narrationKey = keys.find((k) => /narration|desc|detail|particular|payee/i.test(k));
@@ -312,9 +415,7 @@ export const GenericBankCsvAdapter: StatementAdapter = {
     const timeMatch = (row[dateKey] + " " + narration).match(/(\d{1,2}:\d{2})/);
     const time = timeMatch ? timeMatch[1] : null;
 
-    const brand = matchBrand(narration);
-    const merchantKey = brand ? brand.canonicalName : clientPseudonymize(narration, auditSalt);
-    const categoryHint = brand ? brand.category : (narration.includes("UPI") ? "MICRO_QR" : "UNCLASSIFIED");
+    const { name: merchantKey, category: categoryHint } = cleanMerchantName(narration, amount, type);
 
     return {
       date,

@@ -22,21 +22,21 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Solvent — Privacy-First Liquidity & Forensic Spending Analysis",
+  title: "Solvent — Know Where Your Money Goes | Smart Spending Analysis",
   description:
-    "Understand where your money goes without handing over bank logins. Local-first statement parsing for Indian bank & UPI statements with instant spending diagnostics.",
+    "Understand where your money goes without giving away bank logins. Private statement parsing for Indian bank & UPI statements with 100% free instant reports.",
   keywords: [
     "UPI spend analysis",
     "Indian bank statement parser",
-    "local-first finance",
+    "spending habits",
     "spending leak detector",
-    "micro-drain analysis",
+    "small payments tracker",
     "Solvent money",
   ],
   authors: [{ name: "Solvent Team" }],
   openGraph: {
     title: "Solvent — Know Where Your Money Goes",
-    description: "Privacy-first personal liquidity analysis platform for Indian bank and UPI statements.",
+    description: "Private spending analysis platform for Indian bank and UPI statements.",
     siteName: "Solvent",
     locale: "en_IN",
     type: "website",

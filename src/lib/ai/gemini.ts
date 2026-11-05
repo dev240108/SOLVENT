@@ -22,19 +22,25 @@ export async function generateAITeaser(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 1500); // 1.5s max to eliminate lag
 
-    const prompt = `You are the analytical engine for Solvent, a privacy-first liquidity platform.
-Analyze this MINIMIZED aggregate spending payload.
-Payload: ${JSON.stringify(payload)}
+    const prompt = `You are a friendly, highly intelligent money assistant for Solvent (an Indian bank statement analyzer).
+Analyze this aggregate spending data and provide simple, everyday, plain-English analysis.
+CRITICAL RULES:
+1. Do NOT use heavy or academic words like "Gross Discretionary Outflow", "Forensic", "Liquidity", "Entropy", "Pseudonymized".
+2. Do NOT use special characters like "#" or "@" or cryptic merchant IDs (e.g. never say M_#47EA).
+3. Use simple, friendly words: "Total Spending", "Small Daily Spends", "Food Delivery", "Monthly Bills", "Financial Health Score".
+4. Keep the summary under 60 words, engaging and crystal-clear.
 
-Produce JSON matching:
+Data: ${JSON.stringify(payload)}
+
+Produce JSON strictly matching:
 {
   "spending_index": ${deterministic.spending_index},
   "archetype": "${deterministic.archetype}",
   "tone": "NEUTRAL",
-  "summary": "<sharp forensic summary, max 60 words>",
+  "summary": "<friendly, clear, everyday English summary, max 60 words>",
   "critical_finding": ${JSON.stringify(deterministic.critical_finding)},
   "teaser_hooks": ${JSON.stringify(deterministic.teaser_hooks)},
-  "methodology_version": "2026-Fast"
+  "methodology_version": "2026-Friendly"
 }`;
 
     const res = await fetch(

@@ -74,7 +74,7 @@ export default function TeaserResultPage() {
             onClick={() => router.push(`/report/${auditId}`)}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-liquidity text-canvas font-semibold text-[11px] hover:bg-liquidity-hover transition-colors shadow-emerald-glow self-start sm:self-auto"
           >
-            <span>Open Complete Forensic Report</span>
+            <span>View Full Spending Report</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -86,12 +86,12 @@ export default function TeaserResultPage() {
             <SolvencyGauge
               score={teaser.spending_index}
               size={180}
-              label="Spending Pattern Index"
-              sublabel="Deterministic behavioral metric (0–100)"
+              label="Financial Health Score"
+              sublabel="Score based on your spending habits (0–100)"
             />
 
             <div className="mt-5 w-full pt-4 border-t border-surface-border flex items-center justify-between text-xs">
-              <span className="text-text-dim">Archetype Classification</span>
+              <span className="text-text-dim">Spending Style</span>
               <span className="font-mono font-semibold text-text-primary px-2.5 py-0.5 rounded-full bg-zinc-900 border border-surface-border">
                 {teaser.archetype}
               </span>
@@ -102,7 +102,7 @@ export default function TeaserResultPage() {
           <div className="lg:col-span-7 space-y-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono uppercase tracking-widest text-liquidity px-3 py-1 rounded-full bg-liquidity/10 border border-liquidity/20">
-                Diagnostic Overview • 100% Free
+                Summary • 100% Free
               </span>
 
               {/* Tone Switcher */}
@@ -112,11 +112,11 @@ export default function TeaserResultPage() {
                   className={`px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${
                     tone === "NEUTRAL"
                       ? "bg-zinc-800 text-text-primary font-semibold"
-                      : "text-text-dim hover:text-text-muted"
+                    : "text-text-dim hover:text-text-muted"
                   }`}
                 >
                   <FileText className="w-3 h-3 text-liquidity" />
-                  <span>Auditor Tone</span>
+                  <span>Helpful & Clear</span>
                 </button>
                 <button
                   onClick={() => setTone("PLAYFUL")}
@@ -127,7 +127,7 @@ export default function TeaserResultPage() {
                   }`}
                 >
                   <Flame className="w-3 h-3 text-rose-400" />
-                  <span>Roast Tone</span>
+                  <span>Fun Reality Check</span>
                 </button>
               </div>
             </div>
@@ -156,7 +156,7 @@ export default function TeaserResultPage() {
                 onClick={() => router.push(`/report/${auditId}`)}
                 className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-liquidity hover:text-liquidity-hover underline underline-offset-4"
               >
-                <span>View Full Forensic Report</span>
+                <span>View Full Report</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             </div>
@@ -252,10 +252,10 @@ export default function TeaserResultPage() {
           <div className="flex items-center justify-between pb-4 border-b border-surface-border">
             <div>
               <h3 className="text-base font-semibold text-text-primary flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-liquidity" /> Top Discretionary Outflow Destinations
+                <Building2 className="w-4 h-4 text-liquidity" /> Where You Spend Most (Top Stores)
               </h3>
               <p className="text-xs text-text-muted mt-0.5">
-                Primary merchant clusters identified across your statement records.
+                Your highest spending destinations from your statement.
               </p>
             </div>
             <span className="text-xs font-mono px-2.5 py-1 rounded bg-zinc-900 border border-surface-border text-emerald-400">
@@ -293,10 +293,10 @@ export default function TeaserResultPage() {
           <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-surface to-surface border border-liquidity/20 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="space-y-1 text-center sm:text-left">
               <span className="text-xs font-mono uppercase tracking-wider text-liquidity flex items-center justify-center sm:justify-start gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" /> Complete Forensic Report Available
+                <Sparkles className="w-3.5 h-3.5" /> Complete Spending Report Available
               </span>
               <p className="text-sm text-text-primary font-medium">
-                Temporal 24x7 heatmap, recurring subscriptions matrix, 30-day liquidity rules & exports are ready.
+                Time-of-day spending, regular monthly bills, simple savings plan & exports are ready.
               </p>
             </div>
             <button
@@ -304,7 +304,7 @@ export default function TeaserResultPage() {
               className="px-6 py-3 rounded-xl text-xs font-semibold bg-liquidity text-canvas hover:bg-liquidity-hover transition-colors shadow-emerald-glow flex items-center gap-2 shrink-0"
             >
               <BarChart3 className="w-4 h-4" />
-              <span>Open Complete Forensic Dossier</span>
+              <span>Open Complete Report</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

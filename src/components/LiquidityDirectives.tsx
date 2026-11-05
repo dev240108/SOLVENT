@@ -30,10 +30,10 @@ export function LiquidityDirectives({ scenarios }: LiquidityDirectivesProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-border">
         <div>
           <h3 className="text-base font-semibold text-text-primary flex items-center gap-2">
-            <Calculator className="w-4 h-4 text-liquidity" /> 30-Day Actionable Liquidity Directives
+            <Calculator className="w-4 h-4 text-liquidity" /> Simple 30-Day Money Saving Plan
           </h3>
           <p className="text-xs text-text-muted mt-0.5">
-            Practical spending caps derived from your deterministic statement baselines.
+            Practical monthly spending targets based on your actual statement habits.
           </p>
         </div>
 
@@ -41,7 +41,7 @@ export function LiquidityDirectives({ scenarios }: LiquidityDirectivesProps) {
         <div className="p-3 rounded-xl bg-liquidity/10 border border-liquidity/20 flex items-center gap-3">
           <div>
             <span className="text-[10px] uppercase font-mono tracking-wider text-liquidity block">
-              Combined Monthly Potential
+              You Could Save Every Month
             </span>
             <span className="font-mono text-lg font-bold text-text-primary">
               ₹{totalProjectedSavings.toLocaleString("en-IN")}
@@ -64,7 +64,7 @@ export function LiquidityDirectives({ scenarios }: LiquidityDirectivesProps) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-surface-border text-liquidity">
-                    Directive #{idx + 1}
+                    Action #{idx + 1}
                   </span>
                   <span className="text-xs font-mono text-text-dim">30 Days</span>
                 </div>
@@ -76,17 +76,17 @@ export function LiquidityDirectives({ scenarios }: LiquidityDirectivesProps) {
                 {/* Baselines comparison */}
                 <div className="p-3 rounded-xl bg-zinc-900/60 border border-surface-border space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-text-dim">Observed Baseline</span>
+                    <span className="text-text-dim">What You Spend Now</span>
                     <span className="font-mono text-text-muted">₹{scenario.baseline_inr.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-dim">Target 30-Day Cap</span>
+                    <span className="text-text-dim">Suggested Monthly Limit</span>
                     <span className="font-mono font-semibold text-text-primary">
                       ₹{dynamicTarget.toLocaleString("en-IN")}
                     </span>
                   </div>
                   <div className="flex justify-between pt-1 border-t border-surface-border text-liquidity">
-                    <span className="font-medium">Potential Retention</span>
+                    <span className="font-medium">Monthly Savings</span>
                     <span className="font-mono font-bold">+₹{dynamicReduction.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
@@ -95,7 +95,7 @@ export function LiquidityDirectives({ scenarios }: LiquidityDirectivesProps) {
                 <div className="space-y-1.5 pt-1">
                   <div className="flex justify-between text-[11px]">
                     <span className="text-text-dim flex items-center gap-1">
-                      <Sliders className="w-3 h-3 text-text-dim" /> Target Reduction
+                      <Sliders className="w-3 h-3 text-text-dim" /> Target Cut
                     </span>
                     <span className="font-mono font-semibold text-text-primary">{currentPct}%</span>
                   </div>

@@ -92,14 +92,14 @@ export function SocialStoryCard({
                   {score}
                 </span>
                 <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest mt-0.5">
-                  INDEX / 100
+                  SCORE / 100
                 </span>
               </div>
             </div>
 
             <div>
               <span className="text-[10px] font-mono uppercase tracking-widest text-liquidity px-2.5 py-0.5 rounded-full bg-liquidity/10 border border-liquidity/20">
-                Archetype
+                Spending Style
               </span>
               <h3 className="text-lg font-bold text-white mt-1.5 leading-snug">{archetype}</h3>
               <p className="text-[11px] text-zinc-400 mt-0.5 font-mono">{periodText}</p>
@@ -108,15 +108,15 @@ export function SocialStoryCard({
             {/* Micro Drain Highlight */}
             <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 text-left space-y-2">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-zinc-400">Total Outflow</span>
+                <span className="text-zinc-400">Total Spending</span>
                 <span className="font-mono font-bold text-white">
                   ₹{totalDebits.toLocaleString("en-IN")}
                 </span>
               </div>
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-zinc-400">Micro-Drains (&lt;₹100)</span>
+                <span className="text-zinc-400">Small Spends (&lt; ₹100)</span>
                 <span className="font-mono font-bold text-rose-400">
-                  {microDrainCount} taps (₹{microDrainINR.toLocaleString("en-IN")})
+                  {microDrainCount} payments (₹{microDrainINR.toLocaleString("en-IN")})
                 </span>
               </div>
             </div>
@@ -156,7 +156,7 @@ export function SocialStoryCard({
 
       <p className="text-[11px] text-text-dim text-center max-w-xs">
         <ShieldCheck className="w-3.5 h-3.5 inline mr-1 text-liquidity" />
-        Guaranteed PII-Free: No account numbers, bank names, or individual merchant rows are ever included in the story image.
+        100% Private: No bank account numbers or personal details are included in this image.
       </p>
     </div>
   );

@@ -227,7 +227,7 @@ export default function LandingPage() {
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-liquidity animate-pulse" />
                     <span className="font-mono text-xs font-bold uppercase tracking-wider text-text-primary">
-                      Solvency Diagnostic Preview
+                      Spending Health Preview
                     </span>
                   </div>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
@@ -243,15 +243,15 @@ export default function LandingPage() {
                 {/* Macro metrics tiles */}
                 <div className="grid grid-cols-3 gap-2.5 mt-6 pt-6 border-t border-surface-border text-center">
                   <div className="p-2.5 rounded-xl bg-surface border border-surface-border">
-                    <span className="text-[10px] text-text-dim block font-mono">Total UPI Taps</span>
+                    <span className="text-[10px] text-text-dim block font-mono">Total Payments</span>
                     <span className="font-mono text-sm font-bold text-text-primary">186</span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-surface border border-surface-border">
-                    <span className="text-[10px] text-text-dim block font-mono">&lt; ₹100 Spends</span>
+                    <span className="text-[10px] text-text-dim block font-mono">Small Spends (&lt; ₹100)</span>
                     <span className="font-mono text-sm font-bold text-rose-400">₹4,120</span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-surface border border-surface-border">
-                    <span className="text-[10px] text-text-dim block font-mono">Monthly Leak</span>
+                    <span className="text-[10px] text-text-dim block font-mono">Extra Outflow</span>
                     <span className="font-mono text-sm font-bold text-text-primary">₹4,650</span>
                   </div>
                 </div>
@@ -261,11 +261,11 @@ export default function LandingPage() {
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
                     <span className="text-xs font-semibold text-rose-300">
-                      The Under-₹100 Velocity Drain
+                      Small Daily Payments Under ₹100
                     </span>
                   </div>
                   <p className="text-[11px] text-rose-200/80 leading-relaxed">
-                    You averaged 3.1 micro-payments/day at local QRs (₹4,120 total). Frictionless UPI taps drain liquidity without triggering mental spending boundaries.
+                    You averaged 3.1 quick UPI scans per day at local shops (₹4,120 total). These small chai, coffee, and snack payments add up quietly without you realizing.
                   </p>
                 </div>
               </div>

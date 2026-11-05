@@ -143,14 +143,14 @@ export default function FullReportPage() {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-liquidity" />
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-text-primary">
-                Unlocked Forensic Dossier
+                Your Complete Spending Report
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 100% Free Analysis
               </span>
             </div>
             <p className="text-xs text-text-dim">
-              Audit ID: <span className="font-mono text-text-primary">{auditId}</span> • Retained for 30 days
+              Report ID: <span className="font-mono text-text-primary">{auditId.slice(0, 8)}</span> • Available anytime
             </p>
           </div>
 
@@ -160,7 +160,7 @@ export default function FullReportPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-zinc-900 border border-surface-border text-text-muted hover:text-text-primary hover:bg-zinc-800 transition-colors font-mono"
             >
               <Download className="w-3.5 h-3.5 text-liquidity" />
-              <span>Sanitized CSV</span>
+              <span>Export CSV</span>
             </button>
 
             <button
@@ -168,7 +168,7 @@ export default function FullReportPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-zinc-900 border border-surface-border text-text-muted hover:text-text-primary hover:bg-zinc-800 transition-colors font-mono"
             >
               <Printer className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Save as PDF / Print</span>
+              <span>Download PDF / Print</span>
             </button>
 
             <button
@@ -176,7 +176,7 @@ export default function FullReportPage() {
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-liquidity text-canvas hover:bg-liquidity-hover transition-colors shadow-emerald-glow"
             >
               <Share2 className="w-3.5 h-3.5" />
-              <span>9:16 Social Story</span>
+              <span>Share 9:16 Story</span>
             </button>
           </div>
         </div>
@@ -186,10 +186,10 @@ export default function FullReportPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-surface-border">
             <div className="space-y-1">
               <span className="text-xs font-mono uppercase tracking-widest text-liquidity px-3 py-1 rounded-full bg-liquidity/10 border border-liquidity/20">
-                Executive Synthesis
+                Summary Overview
               </span>
               <h2 className="text-2xl font-bold tracking-tight text-text-primary">
-                Forensic Spending Diagnosis
+                Smart Spending Analysis
               </h2>
             </div>
 
@@ -204,7 +204,7 @@ export default function FullReportPage() {
                 }`}
               >
                 <FileText className="w-3 h-3 text-liquidity" />
-                <span>Auditor Mode</span>
+                <span>Helpful & Clear</span>
               </button>
               <button
                 onClick={() => setTone("ROAST")}
@@ -215,26 +215,26 @@ export default function FullReportPage() {
                 }`}
               >
                 <Flame className="w-3 h-3 text-rose-400" />
-                <span>Roast Mode</span>
+                <span>Fun Reality Check</span>
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
             <div className="p-3 rounded-xl bg-zinc-900/60 border border-surface-border">
-              <span className="text-text-dim block">Audit Horizon</span>
+              <span className="text-text-dim block">Statement Period</span>
               <span className="font-semibold text-text-primary mt-1 block">
                 {dossier.executive_summary.period}
               </span>
             </div>
             <div className="p-3 rounded-xl bg-zinc-900/60 border border-surface-border">
-              <span className="text-text-dim block">Gross Discretionary Outflow</span>
+              <span className="text-text-dim block">Total Spending</span>
               <span className="font-semibold text-text-primary mt-1 block">
                 ₹{dossier.executive_summary.total_spend_inr.toLocaleString("en-IN")}
               </span>
             </div>
             <div className="p-3 rounded-xl bg-zinc-900/60 border border-surface-border">
-              <span className="text-text-dim block">Top Cash Driver</span>
+              <span className="text-text-dim block">Biggest Spending Store</span>
               <span className="font-semibold text-rose-400 mt-1 block">
                 {dossier.executive_summary.top_driver}
               </span>
@@ -267,24 +267,24 @@ export default function FullReportPage() {
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-semibold text-text-primary">
-              Estimated Delivery & Platform Markup Surcharges
+              Estimated Delivery & Convenience Fees
             </h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div className="p-3 rounded-xl bg-zinc-900/60 border border-surface-border">
-              <span className="text-text-dim block">Estimated Platform Fees</span>
+              <span className="text-text-dim block">Estimated App & Platform Fees</span>
               <span className="font-mono text-base font-bold text-text-primary mt-1 block">
                 ₹{dossier.waste_estimates.platform_fees_estimate_inr.toLocaleString("en-IN")}
               </span>
             </div>
             <div className="p-3 rounded-xl bg-zinc-900/60 border border-surface-border">
-              <span className="text-text-dim block">Delivery & Surge Markups</span>
+              <span className="text-text-dim block">Delivery & Surge Fees</span>
               <span className="font-mono text-base font-bold text-text-primary mt-1 block">
                 ₹{dossier.waste_estimates.delivery_surge_estimate_inr.toLocaleString("en-IN")}
               </span>
             </div>
             <div className="p-3 rounded-xl bg-zinc-900/60 border border-surface-border">
-              <span className="text-text-dim block">Micro-Drain Friction (&lt; ₹100)</span>
+              <span className="text-text-dim block">Small Daily Spends (&lt; ₹100)</span>
               <span className="font-mono text-base font-bold text-rose-400 mt-1 block">
                 ₹{dossier.waste_estimates.micro_leakage_total_inr.toLocaleString("en-IN")}
               </span>
@@ -298,13 +298,13 @@ export default function FullReportPage() {
         {/* Report Disclaimers and Limitations */}
         <div className="p-5 rounded-2xl bg-surface border border-surface-border text-[11px] text-text-dim space-y-2">
           <p className="font-semibold text-text-muted uppercase tracking-wider font-mono">
-            Audit Disclaimers & Methodology Notes
+            Helpful Notes on Your Statement
           </p>
           <ul className="list-disc list-inside space-y-1">
             {dossier.limitations.map((lim, i) => (
               <li key={i}>{lim}</li>
             ))}
-            <li>Prepared by Solvent (solvent.money) on {new Date().toLocaleDateString("en-IN")}.</li>
+            <li>Analyzed by Solvent (solvent.money) on {new Date().toLocaleDateString("en-IN")}.</li>
           </ul>
         </div>
       </main>

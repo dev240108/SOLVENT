@@ -79,10 +79,10 @@ export function TemporalHeatmap({ distribution }: TemporalHeatmapProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-border">
         <div>
           <h3 className="text-base font-semibold text-text-primary flex items-center gap-2">
-            <Clock className="w-4 h-4 text-liquidity" /> Temporal Spending Distribution
+            <Clock className="w-4 h-4 text-liquidity" /> When You Spend (Morning, Afternoon, Evening, Night)
           </h3>
           <p className="text-xs text-text-muted mt-0.5">
-            Breakdown of financial outflow across explicit 24-hour time windows.
+            See what time of day you tend to spend the most money.
           </p>
         </div>
 

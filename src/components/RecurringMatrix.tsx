@@ -22,31 +22,31 @@ export function RecurringMatrix({ candidates }: RecurringMatrixProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-surface-border">
         <div>
           <h3 className="text-base font-semibold text-text-primary flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-liquidity" /> Candidate Recurring Debits & Autopay
+            <RefreshCw className="w-4 h-4 text-liquidity" /> Regular Bills & Subscriptions
           </h3>
           <p className="text-xs text-text-muted mt-0.5">
-            Repeated charges detected with predictable billing cadences. Review each candidate to verify ongoing utility.
+            Subscriptions, recharges, and repeat payments. Check if you still actively use them.
           </p>
         </div>
         <span className="text-xs font-mono px-2.5 py-1 rounded bg-zinc-900 border border-surface-border text-text-muted">
-          {items.length} Candidates Detected
+          {items.length} Regular Bills Found
         </span>
       </div>
 
       {items.length === 0 ? (
         <p className="text-xs text-text-dim py-6 text-center">
-          No repeated recurring debit patterns identified in this statement period.
+          No repeated monthly bills or subscriptions found in this statement.
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-surface-border text-text-dim uppercase font-mono tracking-wider text-[10px]">
-                <th className="pb-3 font-semibold">Service / Recipient</th>
-                <th className="pb-3 font-semibold">Cadence</th>
-                <th className="pb-3 font-semibold">Billed Amount</th>
-                <th className="pb-3 font-semibold">Confidence</th>
-                <th className="pb-3 font-semibold text-right">Your Audit Action</th>
+                <th className="pb-3 font-semibold">Service / Bill</th>
+                <th className="pb-3 font-semibold">Repeats</th>
+                <th className="pb-3 font-semibold">Amount</th>
+                <th className="pb-3 font-semibold">Likelihood</th>
+                <th className="pb-3 font-semibold text-right">Your Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-border">

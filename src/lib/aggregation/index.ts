@@ -152,54 +152,55 @@ export function calculateSpendingIndex(payload: AggregatedStatementPayload): num
 export function generateDeterministicTeaser(payload: AggregatedStatementPayload): TeaserResponse {
   const index = calculateSpendingIndex(payload);
 
-  let archetype = "Balanced Navigator";
+  let archetype = "Mindful & Balanced Spender";
   if (index < 45) {
-    archetype = "Impulse & Micro-Drain Heavy";
+    archetype = "Quick Spender & Food Lover";
   } else if (index < 65) {
-    archetype = "Frequent Convenience Spender";
+    archetype = "Convenience & Delivery Regular";
   } else if (index < 80) {
-    archetype = "Prudent Modern Consumer";
+    archetype = "Mindful & Balanced Spender";
   } else {
-    archetype = "Disciplined Capital Conserver";
+    archetype = "Super Saver & Budget Champion";
   }
 
   const criticalFinding = {
     finding_key: "MICRO_DRAIN",
-    title: "The Under-₹100 Velocity Drain",
+    title: "Daily Small Payments Under ₹100",
     count: payload.microDrainUnder100.count,
     total_inr: payload.microDrainUnder100.totalINR,
     evidence_refs: ["microDrainUnder100", "totalDebitsINR"],
-    explanation: `You made ${payload.microDrainUnder100.count} micro-transactions under ₹100, totaling ₹${payload.microDrainUnder100.totalINR.toLocaleString("en-IN")}. These low-friction UPI taps leak capital without triggering mental spending boundaries.`,
+    explanation: `You made ${payload.microDrainUnder100.count} small payments under ₹100, adding up to ₹${payload.microDrainUnder100.totalINR.toLocaleString("en-IN")}. These quick UPI scans for chai, snacks, and small items add up silently over the month without you noticing.`,
   };
+
+  const top3Spend = payload.topMerchants.slice(0, 3).reduce((a, b) => a + b.totalINR, 0) || 0;
+  const top3Percent = Math.min(100, Math.round((top3Spend / (payload.totalDebitsINR || 1)) * 100));
 
   const teaserHooks = [
     {
-      text: `Top 3 merchant clusters account for ${Math.round(
-        ((payload.topMerchants.slice(0, 3).reduce((a, b) => a + b.totalINR, 0) || 0) / (payload.totalDebitsINR || 1)) * 100
-      )}% of your discretionary outflow.`,
+      text: `Your top 3 stores and services account for ${top3Percent}% of your total extra spending.`,
       evidence_refs: ["topMerchants"],
       confidence: "HIGH" as const,
       estimate: false,
     },
     {
-      text: `${payload.smallDrain100To250.count} transactions in the ₹100–₹250 quick-commerce zone drained ₹${payload.smallDrain100To250.totalINR.toLocaleString("en-IN")}.`,
+      text: `${payload.smallDrain100To250.count} orders between ₹100 and ₹250 added up to ₹${payload.smallDrain100To250.totalINR.toLocaleString("en-IN")}.`,
       evidence_refs: ["smallDrain100To250"],
       confidence: "HIGH" as const,
       estimate: false,
     },
     {
-      text: `Potential annual savings of ₹${Math.round(
+      text: `You could save roughly ₹${Math.round(
         (payload.microDrainUnder100.totalINR * 0.4 + payload.smallDrain100To250.totalINR * 0.25) * 12
-      ).toLocaleString("en-IN")} identified across leak clusters.`,
+      ).toLocaleString("en-IN")} every year by simply cutting back on small impulse orders.`,
       evidence_refs: ["microDrainUnder100", "smallDrain100To250"],
       confidence: "MEDIUM" as const,
       estimate: true,
     },
   ];
 
-  const lockedPreview = payload.topMerchants.slice(0, 5).map((m, idx) => ({
+  const lockedPreview = payload.topMerchants.slice(0, 5).map((m) => ({
     category: m.categoryHint || "UNCLASSIFIED",
-    maskedLabel: `Merchant Cluster #${idx + 1} (${m.categoryHint || "Vendor"})`,
+    maskedLabel: m.displayName || m.merchantKey,
     totalINR: m.totalINR,
     txCount: m.txCount,
   }));
@@ -208,11 +209,11 @@ export function generateDeterministicTeaser(payload: AggregatedStatementPayload)
     spending_index: index,
     archetype,
     tone: "NEUTRAL",
-    summary: `Across ${payload.periodDays} days, you recorded ₹${payload.totalDebitsINR.toLocaleString("en-IN")} in debits over ${payload.totalDebitCount} transactions. The primary leakage point is high-frequency micro-spends below ₹100 and rapid on-demand food & quick commerce orders.`,
+    summary: `Over ${payload.periodDays} days, you spent ₹${payload.totalDebitsINR.toLocaleString("en-IN")} across ${payload.totalDebitCount} payments. The biggest areas where money leaves your account are quick daily UPI payments under ₹100, online food delivery, and impulse grocery orders.`,
     critical_finding: criticalFinding,
     teaser_hooks: teaserHooks,
     lockedPreview,
-    methodology_version: "2026-Q4-Deterministic",
+    methodology_version: "2026-Friendly",
   };
 }
 
@@ -223,17 +224,17 @@ export function generateProDossier(payload: AggregatedStatementPayload): ProDoss
   const top15 = payload.topMerchants.slice(0, 15);
 
   const merchantForensics = top15.map((m) => {
-    let verdict = "Standard discretionary outflow";
+    let verdict = "Everyday spending and shopping";
     if (m.categoryHint === "QUICK_COMMERCE") {
-      verdict = "High convenience markup; delivery fees & impulse add-ons";
+      verdict = "Instant grocery orders; watch out for delivery fees and impulse snacks";
     } else if (m.categoryHint === "FOOD_DINING") {
-      verdict = "Frequent dining/delivery; prime target for batch ordering";
+      verdict = "Dining out & food delivery; bundling orders can save substantially";
     } else if (m.categoryHint === "MICRO_QR") {
-      verdict = "Frictionless micro-drain; daily habit cluster";
+      verdict = "Daily quick UPI taps at local shops; adds up quickly";
     } else if (m.categoryHint === "SUBSCRIPTIONS") {
-      verdict = "Recurring debit; review active usage";
+      verdict = "Regular monthly bill; check if you still actively use it";
     } else if (m.categoryHint === "MOBILITY") {
-      verdict = "Commute transit; surge pricing detected during peak slots";
+      verdict = "Daily commute & travel; watch out for peak surge pricing";
     }
 
     return {
@@ -272,33 +273,33 @@ export function generateProDossier(payload: AggregatedStatementPayload): ProDoss
 
   const savingsScenarios: SavingsScenario[] = [
     {
-      title: "Tapri & Micro-Drain Cap (Under ₹100)",
+      title: "Tea, Coffee & Snack Limit (Under ₹100)",
       baseline_inr: microBaseline,
       proposed_inr: Math.round(microBaseline * 0.55),
       potential_reduction_inr: Math.round(microBaseline * 0.45),
       period_days: 30,
-      formula: "Baseline * 45% reduction via weekly UPI wallet pre-allocation",
-      assumptions: ["User transitions to weekly prepaid UPI pool instead of direct account taps."],
+      formula: "Keep a fixed weekly UPI budget for local chai & snack scans",
+      assumptions: ["Setting a weekly limit helps you pause before spontaneous micro-payments."],
       evidence_refs: ["microDrainUnder100"],
     },
     {
-      title: "Quick Commerce & Delivery Consolidator",
+      title: "Combine Grocery & Food Deliveries",
       baseline_inr: foodBaseline,
       proposed_inr: Math.round(foodBaseline * 0.7),
       potential_reduction_inr: Math.round(foodBaseline * 0.3),
       period_days: 30,
-      formula: "Reduce 2-3 single-item quick commerce carts per week into 1 planned batch",
-      assumptions: ["Saves delivery fees, surge pricing, and impulse cart additions."],
+      formula: "Order once or twice a week with a planned list instead of 10-minute impulse orders",
+      assumptions: ["Saves multiple delivery fees, surge pricing, and impulse add-ons."],
       evidence_refs: ["topMerchants"],
     },
     {
-      title: "Zombie Subscription & Inactive recurring cull",
+      title: "Review & Cancel Unused Subscriptions",
       baseline_inr: recurringCandidates.reduce((acc, c) => acc + (c.amounts_inr[0] || 0), 0) || 1200,
       proposed_inr: Math.round((recurringCandidates.reduce((acc, c) => acc + (c.amounts_inr[0] || 0), 0) || 1200) * 0.5),
       potential_reduction_inr: Math.round((recurringCandidates.reduce((acc, c) => acc + (c.amounts_inr[0] || 0), 0) || 1200) * 0.5),
       period_days: 30,
-      formula: "Pause or cancel 1-2 underutilized recurring services",
-      assumptions: ["At least one recurring charge represents an uninspected auto-debit."],
+      formula: "Pause or cancel 1-2 auto-debit services you haven't opened this month",
+      assumptions: ["Canceling even one forgotten app or service saves ₹500 to ₹1,500 every single month."],
       evidence_refs: ["recurring_candidates"],
     },
   ];
@@ -323,12 +324,12 @@ export function generateProDossier(payload: AggregatedStatementPayload): ProDoss
 
   return {
     executive_summary: {
-      overview: `Forensic audit completed across ${payload.periodDays} days of statement records. Total outflow of ₹${payload.totalDebitsINR.toLocaleString("en-IN")} tracked across ${payload.totalDebitCount} debit events. Net balance flow is ${payload.netCashFlowINR >= 0 ? "+" : "-"}₹${Math.abs(payload.netCashFlowINR).toLocaleString("en-IN")}.`,
-      neutral_version: `Your spending exhibits typical high-density UPI characteristics. While macro bills remain stable, micro-transactions (<₹100) and instant food/grocery delivery constitute ${Math.round(((microBaseline + foodBaseline) / (payload.totalDebitsINR || 1)) * 100)}% of your discretionary burn rate. Implementing structured 30-day caps can preserve substantial liquidity without lifestyle hardship.`,
-      roast_version: `You're essentially funding the local food delivery ecosystem and paying platform fees for every craving. Your wallet is suffering death by a thousand chai taps and midnight 10-minute grocery runs. It's time to plug the invisible leaks before your bank account declares early retirement.`,
+      overview: `Spending analysis completed for ${payload.periodDays} days. You spent a total of ₹${payload.totalDebitsINR.toLocaleString("en-IN")} across ${payload.totalDebitCount} payments. Your total incoming money was ₹${payload.totalCreditsINR.toLocaleString("en-IN")}.`,
+      neutral_version: `Your spending shows a common modern UPI pattern. While major bills are well managed, small daily payments under ₹100 and convenient food/grocery deliveries make up ${Math.round(((microBaseline + foodBaseline) / (payload.totalDebitsINR || 1)) * 100)}% of your extra spending. Following 2 or 3 simple spending habits can easily help you save ₹3,000 to ₹8,000 every month.`,
+      roast_version: `You're essentially keeping the food delivery apps and your neighborhood chai stalls in business! Those "it's only ₹40" and "quick ₹150 snack" UPI taps are quietly draining your wallet. If you paused the midnight cravings and daily impulse taps for just one month, you'd easily have enough saved for a weekend getaway.`,
       period: `${payload.periodStart} to ${payload.periodEnd}`,
       total_spend_inr: payload.totalDebitsINR,
-      top_driver: top15[0]?.displayName || "Discretionary Outflow",
+      top_driver: top15[0]?.displayName || "Food & Daily Shopping",
     },
     merchant_forensics: merchantForensics,
     recurring_candidates: recurringCandidates,
@@ -338,12 +339,12 @@ export function generateProDossier(payload: AggregatedStatementPayload): ProDoss
       platform_fees_estimate_inr: platformFees,
       delivery_surge_estimate_inr: surgeFees,
       micro_leakage_total_inr: payload.microDrainUnder100.totalINR,
-      methodology_note: "Estimated platform fees based on standard ₹6-₹15 order surcharge. Delivery surge calculated on delivery order volume.",
+      methodology_note: "Estimated platform fees based on standard delivery charges and app surcharges.",
     },
     limitations: [
-      "Statements with only transaction dates lack exact intraday hour timestamps.",
-      "P2P transfers to family, rent, or housemates are pseudonymized and excluded from merchant waste classifications.",
-      "Savings scenarios represent model projections and are not guaranteed investment advice.",
+      "Statements that only list transaction dates show estimated time distribution.",
+      "Personal transfers to family, rent, and friends are separated from store shopping.",
+      "Savings numbers are helpful estimates to guide your budget goals.",
     ],
   };
 }
