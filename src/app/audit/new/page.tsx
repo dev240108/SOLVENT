@@ -9,6 +9,7 @@ import { PasswordPromptModal } from "@/components/PasswordPromptModal";
 import { getSyntheticTransactions } from "@/lib/parser/sampleData";
 import { buildAggregatedPayload } from "@/lib/aggregation";
 import { parseStatementLocally } from "@/lib/parser";
+import { safeFetchJson } from "@/lib/apiUtils";
 import { Lock, ShieldCheck, Sparkles } from "lucide-react";
 
 export default function NewAuditPage() {
@@ -30,21 +31,18 @@ export default function NewAuditPage() {
         confidence: 0.99,
       });
 
-      const res = await fetch("/api/audit/teaser", {
+      const { data } = await safeFetchJson<any>("/api/audit/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, transactions: sampleTxns }),
       });
 
-      if (!res.ok) throw new Error("Could not initialize sample audit.");
-
-      const data = await res.json();
       sessionStorage.setItem(`solvent_token_${data.auditId}`, data.accessToken);
       sessionStorage.setItem(`solvent_teaser_${data.auditId}`, JSON.stringify(data.teaser));
       sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(payload));
       sessionStorage.setItem(`solvent_txns_${data.auditId}`, JSON.stringify(sampleTxns));
 
-      router.push(`/report/${data.auditId}`);
+      window.location.href = `/report/${data.auditId}`;
     } catch (err: any) {
       alert("Error: " + err.message);
     } finally {
@@ -64,8 +62,8 @@ export default function NewAuditPage() {
       if (file.name.toLowerCase().endsWith(".pdf")) {
         const fd = new FormData();
         fd.append("file", file);
-        const pdfRes = await fetch("/api/parse/pdf", { method: "POST", body: fd });
-        result = await pdfRes.json();
+        const { data } = await safeFetchJson<any>("/api/parse/pdf", { method: "POST", body: fd });
+        result = data;
       } else {
         const text = await file.text();
         const auditSalt = Math.random().toString(36).substring(7);
@@ -85,15 +83,12 @@ export default function NewAuditPage() {
       }
 
       // Submit aggregates directly and forward to report
-      const res = await fetch("/api/audit/teaser", {
+      const { data } = await safeFetchJson<any>("/api/audit/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result.payload),
+        body: JSON.stringify({ ...result.payload, transactions: result.transactions }),
       });
 
-      if (!res.ok) throw new Error("Server analysis failed.");
-
-      const data = await res.json();
       sessionStorage.setItem(`solvent_token_${data.auditId}`, data.accessToken);
       sessionStorage.setItem(`solvent_teaser_${data.auditId}`, JSON.stringify(data.teaser));
       sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(result.payload));
@@ -117,8 +112,7 @@ export default function NewAuditPage() {
       fd.append("file", pendingFile);
       fd.append("password", password);
 
-      const pdfRes = await fetch("/api/parse/pdf", { method: "POST", body: fd });
-      const result = await pdfRes.json();
+      const { data: result } = await safeFetchJson<any>("/api/parse/pdf", { method: "POST", body: fd });
 
       if (result.isEncrypted) {
         setPasswordError(result.error || "Incorrect statement password. Please try again.");
@@ -130,17 +124,12 @@ export default function NewAuditPage() {
         return;
       }
 
-      const res = await fetch("/api/audit/teaser", {
+      const { data } = await safeFetchJson<any>("/api/audit/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result.payload),
+        body: JSON.stringify({ ...result.payload, transactions: result.transactions }),
       });
 
-      if (!res.ok) {
-        throw new Error("Could not process aggregates on server.");
-      }
-
-      const data = await res.json();
       sessionStorage.setItem(`solvent_token_${data.auditId}`, data.accessToken);
       sessionStorage.setItem(`solvent_teaser_${data.auditId}`, JSON.stringify(data.teaser));
       sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(result.payload));

@@ -22,6 +22,7 @@ export interface NormalizedTransaction {
   categoryHint?: MerchantCategory;
   parseConfidence: number; // 0..1
   rawNarrationSnippet?: string; // used locally only, NEVER transmitted
+  balanceINR?: number | null;
 }
 
 export interface MerchantAggregate {
@@ -195,4 +196,5 @@ export interface SolventAuditRecord {
   paidAt?: string;
   dossierGeneratedAt?: string;
   isSynthetic?: boolean;
+  transactions?: NormalizedTransaction[];
 }

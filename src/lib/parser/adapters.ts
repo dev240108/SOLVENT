@@ -39,11 +39,15 @@ export function getTimeBucket(timeStr: string | null | undefined): TimeBucket {
  */
 export function normalizeDate(rawDate: string): string | null {
   if (!rawDate) return null;
-  const clean = rawDate.trim();
+  // Clean off trailing timestamp like ', 07:45 PM' or 'at 07:45 pm' or '19:30:00'
+  const clean = rawDate
+    .trim()
+    .replace(/(?:,\s*|\s+at\s+|\s+)(\d{1,2}:\d{2}(?::\d{2})?\s*(?:am|pm)?)/i, "")
+    .trim();
 
   // YYYY-MM-DD (ISO)
   if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
-    const [y, m, d] = clean.split("-").map(Number);
+    const [, m, d] = clean.split("-").map(Number);
     if (m >= 1 && m <= 12 && d >= 1 && d <= 31) return clean;
     return null;
   }
@@ -70,8 +74,8 @@ export function normalizeDate(rawDate: string): string | null {
     jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12"
   };
 
-  // DD-Mon-YYYY, DD/Mon/YY, DD.Mon.YYYY, DD Mon YYYY
-  const monMatch = clean.match(/^(\d{1,2})[/\-.\s]([A-Za-z]{3,9})[/\-.\s](\d{2,4})$/);
+  // DD-Mon-YYYY, DD Mon YYYY, DD/Mon/YYYY (with optional st/nd/rd/th)
+  const monMatch = clean.match(/^(\d{1,2})(?:st|nd|rd|th)?[/\-.\s]([A-Za-z]{3,9})[/\-.\s](\d{2,4})$/i);
   if (monMatch) {
     const day = parseInt(monMatch[1], 10);
     const monthStr = monMatch[2].toLowerCase().slice(0, 3);
@@ -88,8 +92,8 @@ export function normalizeDate(rawDate: string): string | null {
     return null;
   }
 
-  // Mon DD, YYYY or Mon DD YYYY (e.g. Sep 15, 2024)
-  const usMatch = clean.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{2,4})$/);
+  // Mon DD, YYYY or Month DD YYYY (e.g. Sep 15, 2024, Oct 02 2024, October 2nd, 2024)
+  const usMatch = clean.match(/^([A-Za-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{2,4})$/i);
   if (usMatch) {
     const monthStr = usMatch[1].toLowerCase().slice(0, 3);
     const day = parseInt(usMatch[2], 10);
@@ -175,21 +179,38 @@ export function cleanMerchantName(
     candidate = rawNarration;
   }
 
+  // Check for cashback or refund
+  if (/cashback/i.test(rawNarration)) {
+    return { name: "Cashback Reward", category: "P2P_TRANSFER" };
+  }
+
   // 3. Clean up masked card numbers, boilerplate bank phrases & punctuation
   candidate = candidate.replace(/\b\d*[Xx]+\d*\b/g, " "); // masked cards e.g. 412345XXXXXX
   candidate = candidate.replace(
-    /\b(pay to|paid to|transfer to|payment from|transfer from|sent to|received from|to transfer|by transfer|payment from phonepe|payment from gpay|payment from paytm|pos txn|upi txn|imps txn|neft txn)\b/gi,
+    /\b(pay to|paid to|transfer to|payment from|transfer from|sent to|received from|to transfer|by transfer|payment from phonepe|payment from gpay|payment from paytm|pos txn|upi txn|imps txn|neft txn|cashback from|refund from|money sent to|money received from|bill payment to|autopay to)\b/gi,
     " "
   );
+  candidate = candidate.replace(/\b(rs\.?|inr|debit|credit|dr|cr)\b/gi, " "); // currency & markers
   candidate = candidate.replace(/@[a-zA-Z0-9._-]+/g, " "); // remove @vpa handles
   candidate = candidate.replace(/\b\d{5,}\b/g, " "); // remove long numeric IDs
   candidate = candidate.replace(/[#@/\\_*~^%$&()+={}\[\]|:;\"'<>?,.]/g, " "); // remove special characters
   candidate = candidate.replace(/\s+/g, " ").trim();
 
-  // Filter out stray bank codes
+const MONTH_TOKENS = new Set([
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+  "JANUARY", "FEBRUARY", "MARCH", "APRIL", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"
+]);
+
+  // Filter out stray bank codes, months, and currencies
   const words = candidate
     .split(" ")
-    .filter((w) => !BANK_TOKENS.has(w.toUpperCase()) && !/^\d+$/.test(w));
+    .filter(
+      (w) =>
+        !BANK_TOKENS.has(w.toUpperCase()) &&
+        !MONTH_TOKENS.has(w.toUpperCase()) &&
+        !/^\d+$/.test(w) &&
+        !/^(rs|inr|re|dr|cr|debit|credit|upi)$/i.test(w)
+    );
   candidate = words.join(" ").trim();
 
   // Format to Title Case
@@ -220,10 +241,10 @@ export function cleanMerchantName(
     category = "SUBSCRIPTIONS";
   } else if (/pharmacy|medical|chemist|hospital|clinic|diagnostics/i.test(lower)) {
     category = "SHOPPING";
-  } else if (amount < 100) {
-    category = "MICRO_QR";
   } else if (type === "CREDIT") {
     category = "P2P_TRANSFER";
+  } else if (amount < 100) {
+    category = "MICRO_QR";
   }
 
   // Add friendly (UPI) indicator if it was a UPI transaction and not already named

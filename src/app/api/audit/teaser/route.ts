@@ -11,8 +11,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    const candidatePayload = body.payload ? { ...body.payload } : { ...body };
+    const transactions = Array.isArray(body.transactions)
+      ? body.transactions
+      : Array.isArray(candidatePayload.transactions)
+      ? candidatePayload.transactions
+      : undefined;
+
+    delete candidatePayload.transactions;
+
     // 1. Strict payload validation
-    const validation = AggregatedStatementPayloadSchema.safeParse(body);
+    const validation = AggregatedStatementPayloadSchema.safeParse(candidatePayload);
     if (!validation.success) {
       return NextResponse.json(
         {
@@ -67,6 +76,7 @@ export async function POST(req: NextRequest) {
       paidAt: now.toISOString(),
       dossierGeneratedAt: now.toISOString(),
       isSynthetic: false,
+      transactions,
     };
 
     await AuditStore.save(auditRecord);

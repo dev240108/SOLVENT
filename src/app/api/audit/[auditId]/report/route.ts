@@ -43,6 +43,8 @@ export async function GET(
       microDrainINR: audit.microDrainINR,
       proDossier: audit.proDossier,
       teaser: audit.teaserResult,
+      payload: audit.aggregatedPayload,
+      transactions: audit.transactions || [],
     });
   } catch (error: any) {
     console.error("Report retrieval error:", error);

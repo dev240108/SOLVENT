@@ -1,8 +1,14 @@
 import { SolventAuditRecord } from "@/types";
 import { supabase } from "../supabase";
 
-// Ultra-fast in-memory cache for sub-millisecond retrieval
-const auditsMap = new Map<string, SolventAuditRecord>();
+declare global {
+  // eslint-disable-next-line no-var
+  var __solventAuditsMap: Map<string, SolventAuditRecord> | undefined;
+}
+
+// Ultra-fast global in-memory cache shared across Next.js route handlers
+const auditsMap = globalThis.__solventAuditsMap || new Map<string, SolventAuditRecord>();
+globalThis.__solventAuditsMap = auditsMap;
 
 export const AuditStore = {
   async save(audit: SolventAuditRecord): Promise<void> {

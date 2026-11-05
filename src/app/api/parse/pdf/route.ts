@@ -8,6 +8,9 @@ import { NormalizedTransaction, TransactionType } from "@/types";
 import { getTimeBucket, normalizeDate, parseAmount, cleanMerchantName } from "@/lib/parser/adapters";
 import { buildAggregatedPayload } from "@/lib/aggregation";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 // Ensure pdfjs fake worker can resolve on Node / Next.js
 function configurePdfWorker() {
   try {
@@ -27,10 +30,12 @@ function configurePdfWorker() {
   }
 }
 
-// ── STRICT date regex: only matches real dates, not random numbers ──
-// Matches: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD/MM/YY, YYYY-MM-DD,
-//          DD-Mon-YYYY, DD Mon YYYY, DD/Mon/YY
-const STRICT_DATE_RE = /(?:^|\s)((\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})|(\d{4})-(\d{2})-(\d{2})|(\d{1,2})[/\-.\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[/\-.\s](\d{2,4}))(?=\s|$)/i;
+// ── STRICT date regex: matches Indian & UPI statement dates ──
+// Supports: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, DD/MM/YY, YYYY-MM-DD,
+//           DD-Mon-YYYY, DD Mon YYYY, Mon DD, YYYY, Month DD, YYYY
+const STRICT_DATE_RE = /(?:^|\s|[a-z])((\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})|(\d{4})-(\d{2})-(\d{2})|(\d{1,2})(?:st|nd|rd|th)?[/\-.\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[/\-.\s](\d{2,4})|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{2,4}))(?=[\s,]|$)/i;
+
+const GLOBAL_DATE_SCANNER = /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{2,4}|\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?[/\-.\s](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[/\-.\s]\d{2,4}|\d{4}-\d{2}-\d{2})/gi;
 
 /**
  * Validates that a matched date string actually represents a plausible date.
@@ -40,7 +45,6 @@ function strictNormalizeDate(raw: string): string | null {
   const iso = normalizeDate(raw);
   if (!iso) return null;
 
-  // Validate the ISO date is a real calendar date
   const [yearStr, monthStr, dayStr] = iso.split("-");
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);
@@ -50,7 +54,6 @@ function strictNormalizeDate(raw: string): string | null {
   if (month < 1 || month > 12) return null;
   if (day < 1 || day > 31) return null;
 
-  // Check real date validity
   const d = new Date(year, month - 1, day);
   if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) {
     return null;
@@ -60,50 +63,95 @@ function strictNormalizeDate(raw: string): string | null {
 }
 
 /**
- * Checks if the PDF text looks like a real bank statement.
- * A genuine bank statement has a high density of transaction-like lines:
- * lines starting with dates and containing monetary amounts.
+ * Splits extracted PDF text into logical lines, handling both newline-delimited
+ * PDFs and single-stream / mobile PDFs (like PhonePe / Paytm / GPay) by scanning date boundaries.
  */
-function isBankStatement(lines: string[]): boolean {
+function splitTextIntoLogicalLines(text: string): string[] {
+  const newlineLines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  if (newlineLines.length >= 8) {
+    return newlineLines;
+  }
+
+  const matches: { index: number; text: string }[] = [];
+  let m: RegExpExecArray | null;
+  const scanner = new RegExp(GLOBAL_DATE_SCANNER);
+  while ((m = scanner.exec(text)) !== null) {
+    matches.push({ index: m.index, text: m[0] });
+  }
+
+  if (matches.length === 0) {
+    return newlineLines;
+  }
+
+  const chunks: string[] = [];
+  if (matches[0].index > 0) {
+    const header = text.slice(0, matches[0].index).trim();
+    if (header) chunks.push(header);
+  }
+
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i].index;
+    const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
+    const chunk = text.slice(start, end).trim();
+    if (chunk) chunks.push(chunk);
+  }
+
+  return chunks;
+}
+
+/**
+ * Checks if the PDF text looks like a real bank or UPI statement.
+ */
+function isBankStatement(lines: string[], fullText: string): boolean {
   let dateLineCount = 0;
   let totalMoneyLines = 0;
 
+  const isRecognizedFinancialDoc =
+    /phonepe|google\s*pay|gpay|paytm|bhim|statement|hdfc|sbi|icici|axis|kotak|bank|passbook|transaction|narration|withdrawal|deposit|balance|upi/i.test(
+      fullText
+    );
+
   for (const line of lines) {
     const hasDate = STRICT_DATE_RE.test(line);
-    const hasMoney = /(?:₹|Rs\.?|INR)?\s*\d{1,3}(?:,\d{2,3})*\.\d{2}\b/.test(line);
+    const hasMoney =
+      /(?:₹|Rs\.?|INR)\s*\d{1,3}(?:,\d{2,3})*(?:\.\d{1,2})?|\b\d{1,3}(?:,\d{2,3})*\.\d{2}\b/i.test(line);
 
     if (hasDate) dateLineCount++;
     if (hasMoney) totalMoneyLines++;
   }
 
-  // A real bank statement has at least 3 date lines and 3 money lines
-  return dateLineCount >= 3 && totalMoneyLines >= 3;
+  if (isRecognizedFinancialDoc && (dateLineCount >= 1 || totalMoneyLines >= 1)) {
+    return true;
+  }
+
+  return dateLineCount >= 2 && totalMoneyLines >= 2;
 }
 
 /**
  * Extracts monetary amounts from a text block.
- * STRICT: only matches numbers with exactly 2 decimal places (like 450.00, 1,500.50)
- * or numbers prefixed with ₹/Rs/INR.
  */
 function extractMonetaryAmounts(text: string): number[] {
   const amounts: number[] = [];
 
-  // Pattern 1: ₹/Rs/INR prefixed amounts (with or without decimals)
-  const prefixedRegex = /(?:₹|Rs\.?\s*|INR\s+)(\d{1,3}(?:,\d{2,3})*(?:\.\d{1,2})?)/g;
+  // Pattern 1: ₹/Rs/INR prefixed amounts (with or without decimals, with or without commas)
+  const prefixedRegex = /(?:₹|Rs\.?\s*|INR\s*)(\d+(?:,\d+)*(?:\.\d{1,2})?)/gi;
   let m: RegExpExecArray | null;
   while ((m = prefixedRegex.exec(text)) !== null) {
     const parsed = parseAmount(m[1]);
-    if (parsed > 0) amounts.push(parsed);
+    if (parsed > 0 && !amounts.includes(parsed)) amounts.push(parsed);
   }
 
-  // Pattern 2: Numbers with exactly 2 decimal places (standard bank format: 450.00, 1,50,000.00)
-  const decimalRegex = /\b(\d{1,3}(?:,\d{2,3})*\.\d{2})\b/g;
+  // Pattern 2: Numbers with exactly 2 decimal places (standard bank format: 450.00, 1500.00, 1,50,000.00)
+  const decimalRegex = /\b(\d+(?:,\d+)*\.\d{2})\b/g;
   while ((m = decimalRegex.exec(text)) !== null) {
     const parsed = parseAmount(m[1]);
     if (parsed > 0 && !amounts.includes(parsed)) {
-      // Filter out years, version numbers, and obviously non-monetary values
-      if (parsed >= 2020 && parsed <= 2030) continue; // Years
-      if (parsed < 0.01) continue; // Too small
+      if (parsed >= 2020 && parsed <= 2030) continue; // Skip years
+      if (parsed < 0.01) continue;
       amounts.push(parsed);
     }
   }
@@ -166,16 +214,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const lines: string[] = text
-      .split(/\r?\n/)
-      .map((l: string) => l.trim())
-      .filter((l: string) => l.length > 0);
+    const lines = splitTextIntoLogicalLines(text);
 
-    // ── STEP 0: Verify this is actually a bank statement ──
-    if (!isBankStatement(lines)) {
+    // ── STEP 0: Verify this is actually a bank or UPI statement ──
+    if (!isBankStatement(lines, text)) {
       return NextResponse.json(
         {
-          error: "This PDF does not appear to be a bank or UPI statement. Please upload a statement downloaded from your bank's netbanking portal or your UPI app (PhonePe, GPay, Paytm).",
+          error:
+            "This PDF does not appear to be a bank or UPI statement. Please upload a statement downloaded from your bank's netbanking portal or your UPI app (PhonePe, GPay, Paytm).",
         },
         { status: 422 }
       );
@@ -194,7 +240,8 @@ export async function POST(req: NextRequest) {
     let pendingLines: string[] = [];
 
     // Header/footer/summary patterns to skip entirely
-    const SKIP_LINE_RE = /^(page\s+\d|statement\s+of\s+account|account\s+number|customer\s+id|branch\b|ifsc\b|opening\s+balance|closing\s+balance|total\s+debit|total\s+credit|date\s+particular|date\s+narration|date\s+description|txn\s+date|value\s+date|transaction\s+date|sr\.?\s*no|s\.?\s*no\b)/i;
+    const SKIP_LINE_RE =
+      /^(page\s+\d|statement\s+of\s+account|statement\s+period|statement\s+for|account\s+number|customer\s+id|branch\b|ifsc\b|opening\s+balance|closing\s+balance|total\s+debit|total\s+credit|date\s+particular|date\s+narration|date\s+description|date\s+details|txn\s+date|value\s+date|transaction\s+date|sr\.?\s*no|s\.?\s*no\b)/i;
 
     for (const line of lines) {
       if (SKIP_LINE_RE.test(line)) continue;
@@ -205,7 +252,6 @@ export async function POST(req: NextRequest) {
         const isoDate = strictNormalizeDate(dateStr);
 
         if (isoDate) {
-          // Start a new block
           blocks.push({
             dateStr,
             isoDate,
@@ -247,10 +293,8 @@ export async function POST(req: NextRequest) {
       const timeMatch = blockText.match(/\b([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\b/);
       const time = timeMatch ? `${timeMatch[1].padStart(2, "0")}:${timeMatch[2]}` : null;
 
-      // ── Extract monetary amounts (STRICT: only .XX decimals or ₹-prefixed) ──
-      // First remove the date portion to avoid parsing date digits as amounts
+      // ── Extract monetary amounts ──
       let textWithoutDate = blockText.replace(block.dateStr, " ");
-      // Remove time stamps too
       if (time) {
         textWithoutDate = textWithoutDate.replace(/\b[01]?\d|2[0-3]:[0-5]\d(?::[0-5]\d)?\b/, " ");
       }
@@ -267,41 +311,39 @@ export async function POST(req: NextRequest) {
       let txAmount = 0;
 
       const isExplicitCredit =
-        /\b(cr|credit|credited|deposit|deposited|salary|refund|cash\s*deposit|interest\s*paid|int\.?\s*pd|int\s*earned|by\s*transfer|by\s*clg|neft\s*cr|rtgs\s*cr|imps\s*cr)\b/i.test(lower) ||
+        /\b(cr|credit|credited|deposit|deposited|salary|refund|cashback|received\s*from|money\s*received|cash\s*deposit|interest\s*paid|int\.?\s*pd|int\s*earned|by\s*transfer|by\s*clg|neft\s*cr|rtgs\s*cr|imps\s*cr)\b/i.test(
+          lower
+        ) ||
         /\/cr\b/i.test(lower) ||
-        /\bcr\s*$/i.test(lower.trim());
+        /\bcr\s*$/i.test(lower.trim()) ||
+        /\+\s*(?:₹|rs)/i.test(lower);
 
       const isExplicitDebit =
-        /\b(dr|debit|debited|withdrawal|wdl|atm\s*wdl|atm\s*cwl|pos\b|purchase|payment|to\s*transfer|paid|neft\s*dr|rtgs\s*dr|imps\s*dr|ach\s*dr|nach\s*dr|emi)\b/i.test(lower) ||
+        /\b(dr|debit|debited|withdrawal|wdl|atm\s*wdl|atm\s*cwl|pos\b|purchase|payment|paid\s*to|transfer\s*to|payment\s*to|sent\s*to|money\s*sent|autopay|bill\s*paid|to\s*transfer|paid|neft\s*dr|rtgs\s*dr|imps\s*dr|ach\s*dr|nach\s*dr|emi)\b/i.test(
+          lower
+        ) ||
         /\/dr\b/i.test(lower) ||
-        /\bdr\s*$/i.test(lower.trim());
+        /\bdr\s*$/i.test(lower.trim()) ||
+        /-\s*(?:₹|rs)/i.test(lower);
 
       if (amounts.length >= 3) {
-        // Tabular layout: typically [Withdrawal, Deposit, Balance] or [Debit, Credit, Balance]
-        const col1 = amounts[0]; // Withdrawal/Debit amount
-        const col2 = amounts[1]; // Deposit/Credit amount
-        // amounts[2] is Balance — we never use it as txAmount
+        const col1 = amounts[0];
+        const col2 = amounts[1];
 
-        // In bank statements with separate columns, one column is 0 or absent
         if (isExplicitCredit && !isExplicitDebit) {
           type = "CREDIT";
-          // Credit amount is typically in the second column
           txAmount = col2 > 0 ? col2 : col1;
         } else if (isExplicitDebit && !isExplicitCredit) {
           type = "DEBIT";
           txAmount = col1 > 0 ? col1 : col2;
         } else {
-          // No explicit marker — use column position heuristic
-          // The smaller non-balance amount is the transaction
           type = "DEBIT";
           txAmount = col1;
         }
       } else if (amounts.length === 2) {
-        // [Transaction_Amount, Balance] or [Debit, Credit]
         txAmount = amounts[0];
         type = isExplicitCredit && !isExplicitDebit ? "CREDIT" : "DEBIT";
       } else {
-        // Single amount
         txAmount = amounts[0];
         type = isExplicitCredit && !isExplicitDebit ? "CREDIT" : "DEBIT";
       }
@@ -314,6 +356,8 @@ export async function POST(req: NextRequest) {
       // ── Clean merchant name ──
       const { name: merchantKey, category: categoryHint } = cleanMerchantName(blockText, txAmount, type);
 
+      const balance = amounts.length >= 3 ? amounts[2] : amounts.length === 2 ? amounts[1] : null;
+
       transactions.push({
         date: block.isoDate,
         time,
@@ -323,6 +367,8 @@ export async function POST(req: NextRequest) {
         timeBucket: getTimeBucket(time),
         categoryHint,
         parseConfidence: 0.96,
+        rawNarrationSnippet: blockText.replace(/\s+/g, " ").trim(),
+        balanceINR: balance != null ? Math.round(balance * 100) / 100 : null,
       });
     }
 
@@ -331,16 +377,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Could not find readable transaction records in this PDF. Please make sure you upload an official bank statement PDF downloaded from your bank's netbanking portal — not a screenshot, scan, or other document.",
+            "Could not find readable transaction records in this PDF. Please make sure you upload an official bank or UPI statement PDF — not a screenshot, scan, or unformatted document.",
         },
         { status: 422 }
       );
     }
 
-    // ── Quality check: calculate actual confidence ──
+    // ── Quality check ──
     const totalBlocks = blocks.length;
     const parsedRatio = totalBlocks > 0 ? transactions.length / totalBlocks : 0;
-    const confidence = Math.min(0.99, Math.max(0.5, parsedRatio));
+    const confidence = Math.min(0.99, Math.max(0.6, parsedRatio));
 
     const payload = buildAggregatedPayload(transactions, {
       parsedRows: transactions.length,

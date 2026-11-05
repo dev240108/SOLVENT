@@ -13,6 +13,7 @@ import { PasswordPromptModal } from "@/components/PasswordPromptModal";
 import { getSyntheticTransactions } from "@/lib/parser/sampleData";
 import { buildAggregatedPayload } from "@/lib/aggregation";
 import { parseStatementLocally } from "@/lib/parser";
+import { safeFetchJson } from "@/lib/apiUtils";
 import { ShieldCheck, Zap, Lock, AlertTriangle, Sparkles } from "lucide-react";
 
 export default function LandingPage() {
@@ -36,23 +37,18 @@ export default function LandingPage() {
       });
 
       // Submit to Teaser API
-      const res = await fetch("/api/audit/teaser", {
+      const { data } = await safeFetchJson<any>("/api/audit/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, transactions: sampleTxns }),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to initialize sample analysis.");
-      }
-
-      const data = await res.json();
       sessionStorage.setItem(`solvent_token_${data.auditId}`, data.accessToken);
       sessionStorage.setItem(`solvent_teaser_${data.auditId}`, JSON.stringify(data.teaser));
       sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(payload));
       sessionStorage.setItem(`solvent_txns_${data.auditId}`, JSON.stringify(sampleTxns));
 
-      router.push(`/report/${data.auditId}`);
+      window.location.href = `/report/${data.auditId}`;
     } catch (err: any) {
       alert("Error starting sample analysis: " + err.message);
     } finally {
@@ -73,8 +69,8 @@ export default function LandingPage() {
       if (file.name.toLowerCase().endsWith(".pdf")) {
         const fd = new FormData();
         fd.append("file", file);
-        const pdfRes = await fetch("/api/parse/pdf", { method: "POST", body: fd });
-        result = await pdfRes.json();
+        const { data } = await safeFetchJson<any>("/api/parse/pdf", { method: "POST", body: fd });
+        result = data;
       } else {
         const text = await file.text();
         const auditSalt = Math.random().toString(36).substring(7);
@@ -94,17 +90,12 @@ export default function LandingPage() {
       }
 
       // Immediately process payload
-      const res = await fetch("/api/audit/teaser", {
+      const { data } = await safeFetchJson<any>("/api/audit/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result.payload),
+        body: JSON.stringify({ ...result.payload, transactions: result.transactions }),
       });
 
-      if (!res.ok) {
-        throw new Error("Could not process aggregates on server.");
-      }
-
-      const data = await res.json();
       sessionStorage.setItem(`solvent_token_${data.auditId}`, data.accessToken);
       sessionStorage.setItem(`solvent_teaser_${data.auditId}`, JSON.stringify(data.teaser));
       sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(result.payload));
@@ -128,8 +119,7 @@ export default function LandingPage() {
       fd.append("file", pendingFile);
       fd.append("password", password);
 
-      const pdfRes = await fetch("/api/parse/pdf", { method: "POST", body: fd });
-      const result = await pdfRes.json();
+      const { data: result } = await safeFetchJson<any>("/api/parse/pdf", { method: "POST", body: fd });
 
       if (result.isEncrypted) {
         setPasswordError(result.error || "Incorrect statement password. Please try again.");
@@ -142,17 +132,12 @@ export default function LandingPage() {
       }
 
       // Process aggregates on server
-      const res = await fetch("/api/audit/teaser", {
+      const { data } = await safeFetchJson<any>("/api/audit/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result.payload),
+        body: JSON.stringify({ ...result.payload, transactions: result.transactions }),
       });
 
-      if (!res.ok) {
-        throw new Error("Could not process aggregates on server.");
-      }
-
-      const data = await res.json();
       sessionStorage.setItem(`solvent_token_${data.auditId}`, data.accessToken);
       sessionStorage.setItem(`solvent_teaser_${data.auditId}`, JSON.stringify(data.teaser));
       sessionStorage.setItem(`solvent_payload_${data.auditId}`, JSON.stringify(result.payload));

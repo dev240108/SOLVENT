@@ -1,0 +1,7 @@
+{
+  "name": "Solvent",
+  "description": "Understand where your money goes without giving away bank logins. Private statement parsing for Indian bank & UPI statements with 100% free instant reports.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
